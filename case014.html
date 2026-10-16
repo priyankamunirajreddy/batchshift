@@ -1,0 +1,1593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Who Stole the 14%? · Case 014</title>
+<meta name="description" content="A multiplayer Six Sigma bioprocess investigation game for classrooms.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: investigation room. Single dark navy theme by design (projector + phones). Mode bar, sticky team bar, stacked panels. */
+:root{
+  --bg:#0b1424; --bg2:#0f1b30; --panel:#13223b; --panel2:#182b49; --line:#284065; --fg:#e8eef7; --muted:#93a6c2;
+  --cyan:#3fd0e0; --amber:#f2b13c; --red:#ef5a4c; --green:#6fd68a; --violet:#b39cf2;
+  --c1:var(--cyan); --c2:var(--amber); --c3:var(--violet); --c4:var(--green); --alarm:var(--amber); --accent:var(--cyan);
+  --grid:rgba(147,166,194,.15); --glow:rgba(63,208,224,.14);
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:8px; color-scheme:dark;
+}
+*{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:15px/1.5 var(--f-body);padding-bottom:env(safe-area-inset-bottom,0px);
+ background-image:radial-gradient(circle at 15% -10%,rgba(63,208,224,.10),transparent 40%),radial-gradient(circle at 100% 0,rgba(239,90,76,.08),transparent 35%),linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:auto,auto,48px 48px,48px 48px;background-attachment:fixed}
+[hidden]{display:none!important}
+h1,h2,h3,h4{font-family:var(--f-display);font-weight:700;letter-spacing:.02em;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(2.2rem,7vw,4.2rem);text-transform:uppercase} h2{font-size:1.7rem} h3{font-size:1.3rem} h4{font-size:1.05rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+p{margin:0} a{color:var(--cyan)} code{font-family:var(--f-mono);font-size:.85em}
+button,input,select,textarea{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
+.wrap.narrow{max-width:720px}
+.stack{display:flex;flex-direction:column;gap:12px} .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center} .sb{justify-content:space-between} .center{text-align:center;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px} .grid2>*{min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.panel.flat{background:var(--bg2)}
+.label{font:500 .7rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)} .label.alarm{color:var(--amber)}
+.muted{color:var(--muted)} .small{font-size:.88rem} .tiny{font-size:.76rem} .num{font-family:var(--f-mono);font-variant-numeric:tabular-nums} .good{color:var(--green)}
+.btn{border:1px solid var(--line);background:var(--panel2);padding:9px 15px;border-radius:6px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;color:var(--fg)}
+.btn:hover{border-color:var(--cyan)} .btn.primary{background:var(--cyan);color:#05212a;border-color:var(--cyan)} .btn.warn{border-color:var(--red);color:#ffb3aa} .btn.ghost{background:transparent}
+.btn.big{padding:13px 20px;font-size:1.05rem} .btn.sm{padding:5px 10px;font-size:.85rem} .btn:disabled{opacity:.45;cursor:not-allowed}
+input[type=text],input[type=number],input[type=password],select,textarea{background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:9px 10px;width:100%;min-width:0}
+textarea{min-height:64px;resize:vertical} fieldset{border:none;padding:0;margin:0}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.chip{display:inline-flex;align-items:center;font:500 .72rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);border-radius:4px;padding:2px 8px;white-space:nowrap;color:var(--muted)}
+.chip.good{color:var(--green);border-color:currentColor} .chip.warn{color:var(--amber);border-color:currentColor} .chip.bad{color:var(--red);border-color:currentColor}
+.note{border-left:3px solid var(--cyan);background:var(--bg2);padding:9px 12px;border-radius:0 6px 6px 0} .note.warn{border-color:var(--amber)} .note.bad{border-color:var(--red)}
+table{border-collapse:collapse;width:100%;font-size:.88rem} th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 .68rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)} td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;max-width:100%}
+.modebar{font:500 .78rem var(--f-mono);padding:6px 16px;letter-spacing:.04em;text-align:center}
+.modebar.live{background:rgba(111,214,138,.12);color:var(--green)} .modebar.demo{background:rgba(242,177,60,.14);color:var(--amber)} .modebar .err{color:var(--red);display:block}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:6px;z-index:50;max-width:calc(100vw - 32px);font-weight:500}
+.toast.bad{background:var(--red);color:#fff}
+/* incident board */
+.incident{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--red);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden}
+.incident::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent 0 22px,rgba(239,90,76,.05) 22px 44px);pointer-events:none}
+.inc-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.stamp{font:800 .9rem var(--f-display);letter-spacing:.2em;color:var(--red);border:2px solid var(--red);padding:2px 10px;transform:rotate(-3deg)}
+.beacon{font-style:normal;animation:blink 1.2s steps(2) infinite} @keyframes blink{50%{opacity:.2}}
+.meter-wrap{display:flex;flex-direction:column;gap:6px}
+.ymeter{height:34px;border-radius:6px;background:var(--bg2);border:1px solid var(--line);display:flex;overflow:hidden;position:relative}
+.yfill{width:86%;background:linear-gradient(90deg,var(--cyan),#2aa6b8);animation:drain 2.4s cubic-bezier(.6,.1,.3,1) both}
+.ygone{flex:1;background:repeating-linear-gradient(45deg,rgba(239,90,76,.55) 0 8px,rgba(239,90,76,.25) 8px 16px);display:flex;align-items:center;justify-content:center;animation:appear 2.4s both}
+.ygone span{font:700 .78rem var(--f-mono);color:#fff;white-space:nowrap;padding:0 4px}
+@keyframes drain{from{width:100%}to{width:86%}} @keyframes appear{from{opacity:0}to{opacity:1}}
+.ylabels{display:flex;justify-content:space-between;font-size:.74rem;color:var(--muted);position:relative}
+.yfill{display:flex;align-items:center;justify-content:flex-end}.yfill span{font:600 .78rem var(--f-mono);color:#05212a;padding:0 8px;white-space:nowrap}
+.calc{font-size:1.05rem} .calc b{color:var(--red);font-size:1.25rem}
+/* home */
+.home-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.home-grid{grid-template-columns:1fr}}
+.howto{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;counter-reset:s}
+.howto li{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:4px;counter-increment:s;min-width:0}
+.howto li b::before{content:counter(s) " · ";color:var(--amber)} .howto li b{font:700 1.1rem var(--f-display);text-transform:uppercase;letter-spacing:.04em} .howto li span{font-size:.85rem;color:var(--muted)}
+@media (max-width:560px){.howto{grid-template-columns:1fr}}
+.icons{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.iconpick input{position:absolute;opacity:0;pointer-events:none} .iconpick span{display:flex;align-items:center;justify-content:center;font-size:1.4rem;height:42px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:var(--bg2)}
+.iconpick input:checked+span{border-color:var(--amber);background:rgba(242,177,60,.15)} .iconpick input:focus-visible+span{outline:2px solid var(--amber)}
+.clock{font:600 2.6rem var(--f-mono);color:var(--cyan)} .clock.sm{font-size:1.4rem} .clock.xs{font-size:1rem} .clock.xl{font-size:clamp(3rem,9vw,6rem)}
+.clock.urgent{color:var(--amber)} .clock.over{color:var(--red);animation:blink 1s steps(2) infinite}
+.lb tr.first td{color:var(--amber)} .lb .ico{font-size:1.1rem}
+/* team */
+.teambar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;gap:12px;align-items:center;background:rgba(11,20,36,.94);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;flex-wrap:wrap}
+.tb-l,.tb-r{display:flex;gap:10px;align-items:center} .ico.big{font-size:1.8rem}
+.rstrip{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.rstrip li{border-top:3px solid var(--line);padding:6px 4px 0;display:flex;flex-direction:column;font-size:.75rem;color:var(--muted);min-width:0}
+.rstrip li b{font:700 1rem var(--f-display);color:var(--fg)} .rstrip li i{font-style:normal;color:var(--cyan);font-family:var(--f-mono);font-size:.68rem}
+.rstrip li.open,.rstrip li.now{border-color:var(--amber)} .rstrip li.closed{border-color:var(--green)}
+@media (max-width:520px){.rstrip li span{display:none}}
+.roundhead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.q{border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg2)}
+.qhead{display:flex;justify-content:space-between;gap:10px} .pts{font:600 .75rem var(--f-mono);color:var(--amber);white-space:nowrap}
+.opts{display:flex;flex-direction:column;gap:6px} .opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:6px;padding:9px 11px;cursor:pointer;background:var(--panel)}
+.opt.on{border-color:var(--cyan);background:var(--glow)} .opt input{margin-top:4px;accent-color:var(--cyan)}
+.scale{display:flex;gap:6px} .scale .opt{flex:1;justify-content:center;font:600 1.1rem var(--f-mono)} .scale .opt input{position:absolute;opacity:0}
+.submitbar{position:sticky;bottom:0;background:var(--panel);padding:10px 0 4px;border-top:1px solid var(--line)}
+.suspects{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.suspect{border:1px solid var(--line);border-radius:var(--r);padding:12px;background:var(--bg2);display:flex;flex-direction:column;gap:6px;transition:border-color .2s}
+.suspect.sel{border-color:var(--cyan)} .suspect.lead{border-color:var(--amber);box-shadow:0 0 0 3px rgba(242,177,60,.15)}
+.sic{font-size:1.8rem} .inspect{border-left:2px solid var(--amber);padding-left:8px;color:var(--fg);animation:appear .3s}
+.stations{display:flex;gap:6px;overflow-x:auto} .stab{border:1px solid var(--line);background:var(--panel);border-radius:6px 6px 0 0;padding:9px 12px;white-space:nowrap;color:var(--muted)}
+.stab b{color:var(--amber);font-family:var(--f-display);font-size:1.1rem} .stab.on{color:var(--fg);border-color:var(--cyan);background:var(--panel2)}
+.timeline{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:3px;align-items:end;height:100px;border-bottom:1px solid var(--line);padding-bottom:2px}
+.tbatch{border:none;background:none;padding:0;display:flex;flex-direction:column-reverse;align-items:center;gap:2px;height:100%;justify-content:flex-start;min-width:0}
+.tbatch i{display:block;width:100%;background:var(--cyan);border-radius:2px 2px 0 0;opacity:.8} .tbatch.low i{background:var(--amber)} .tbatch.on i{background:var(--fg);opacity:1}
+.tbatch span{font:.6rem var(--f-mono);color:var(--muted)}
+.record{border:1px dashed var(--amber);border-radius:6px;padding:10px 12px} .kv{display:grid;grid-template-columns:auto auto;gap:2px 16px;justify-content:start;font-size:.85rem;margin-top:6px}
+.kv span:nth-child(odd){color:var(--muted)}
+.chips{gap:6px} .chipbtn{border:1px solid var(--line);background:var(--bg2);border-radius:20px;padding:5px 12px;font-size:.82rem;color:var(--muted)} .chipbtn.on{border-color:var(--cyan);color:var(--fg)}
+.chart{width:100%;height:auto;display:block} .chart text{fill:var(--muted);font:11px var(--f-mono)} .chart .ttl{fill:var(--fg);font:600 13px var(--f-body)} .chart .gl{stroke:var(--grid)} .chart .ax{stroke:var(--line)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem} .legend span::before{content:"";display:inline-block;width:12px;height:3px;background:var(--lc);margin-right:6px;vertical-align:middle}
+.fish{display:flex;flex-direction:column;gap:6px}
+.bones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bone{border-left:2px solid var(--cyan);padding:4px 8px;min-height:64px;display:flex;flex-direction:column;gap:4px}
+.cause{font-size:.78rem;background:var(--panel2);border:1px solid var(--amber);border-radius:4px;padding:3px 6px}
+.spine{height:4px;background:var(--cyan);position:relative;margin-right:110px}
+.spine span{position:absolute;right:-110px;top:50%;transform:translateY(-50%);border:2px solid var(--red);border-radius:0 30px 30px 0;padding:4px 10px;font:700 .9rem var(--f-display);background:var(--bg2);white-space:nowrap}
+.fishpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+@media (max-width:560px){.bones{grid-template-columns:1fr}.spine{margin:0}.spine span{position:static;display:inline-block;transform:none;margin-top:8px}}
+.big2{font:600 1.8rem var(--f-mono);color:var(--cyan)}
+.released{border:1px solid var(--amber);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:6px;background:rgba(242,177,60,.06);animation:appear .5s}
+.ivs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.iv{display:flex;gap:10px;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--bg2);cursor:pointer} .iv>div{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.iv.on{border-color:var(--cyan);background:var(--glow)} .iv input{accent-color:var(--cyan);margin-top:4px}
+.outcome{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.otile{border:1px solid var(--line);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:2px;background:var(--bg2)}
+.otile b{font-size:1.35rem} .otile.good b{color:var(--green)} .otile.warn b{color:var(--amber)} .otile.bad b{color:var(--red)}
+.debrief{border-color:var(--cyan)} details summary{cursor:pointer;font-weight:600}
+/* host */
+.hosthead{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px} @media (max-width:860px){.hosthead{grid-template-columns:1fr}}
+.joinbox{display:flex;gap:16px;background:var(--panel);border:1px solid var(--cyan);border-radius:var(--r);padding:16px;flex-wrap:wrap;align-items:center}
+.joinbox>div:first-child{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px}
+.code{font:700 clamp(2.4rem,6vw,3.6rem) var(--f-mono);letter-spacing:.12em;color:var(--amber)}
+.qr{width:170px;height:170px;background:#fff;border-radius:6px;padding:6px;flex:none;display:flex;align-items:center;justify-content:center;color:#111}
+.qr svg{width:100%;height:100%}
+.linkbox{font:.75rem var(--f-mono)!important}
+.rounds{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.rctl{border:1px solid var(--line);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg2)} .rctl.open{border-color:var(--green)} .rctl.paused{border-color:var(--amber)}
+.insp tr.missing td{background:rgba(239,90,76,.06)} .quote{color:var(--muted);margin-top:4px}
+.adj{display:grid;grid-template-columns:70px minmax(120px,1fr) auto auto;gap:4px;align-items:center} .adj input{padding:5px 6px}
+.audit{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:4px;font-size:.85rem}
+.exports{display:flex;flex-wrap:wrap;gap:8px}
+.eq{font:.75rem var(--f-mono);background:var(--bg2);padding:10px;border-radius:6px;overflow-x:auto;white-space:pre-wrap}
+/* board */
+.boardhead{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,1fr);gap:16px;align-items:stretch} @media (max-width:980px){.boardhead{grid-template-columns:1fr}}
+.board .lb td{font-size:1.05rem}
+.winner{text-align:center;border:2px solid var(--amber);border-radius:12px;padding:24px;background:rgba(242,177,60,.08);animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+.winner .wname{font:800 clamp(2.4rem,7vw,4.4rem) var(--f-display);color:var(--amber);text-transform:uppercase}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main id="app"><div class="wrap"><p class="muted">Loading Case 014…</p><noscript>This game needs JavaScript.</noscript></div></main>
+<script>/* ===================== BATCHSHIFT SIMULATION ENGINE =====================
+   Pure functions only: no DOM access. All data synthetic (educational).   */
+const ENGINE = (() => {
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  function rng(seed) {
+    let s = seed >>> 0;
+    return function () {
+      s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function normal(r) { let u = 0; while (u === 0) u = r(); const v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  // ---- Assumed coefficients (educational, not validated) ----
+  const C = {
+    Y0: 5.00,      // baseline final yield, g/L (synthetic historical mean, batches 001-006)
+    Ycur: 4.30,    // current final yield, g/L (synthetic historical mean, batches 019-024)
+    kA: 0.0010, Aopt: 18,       // inoculum fitness curvature (1/h^2), optimum age (h)
+    kF: 0.0012,                 // titer loss per minute of feed-timing deviation
+    kD: 0.0015,                 // exponential titer loss per minute of true low-DO time
+    Sref: 0.97,                 // sensor reliability above which no hidden excursion accumulates
+    L0: 0.030, lD: 0.0005, lF: 0.0003, // lysis fraction model
+    H0: 0.95, hL: 1.2,          // harvest (clarification) efficiency and sensitivity to lysis
+    saD: 0.0012, saA: 0.003, Aact: 22, saPool: 1.2, Rpool: 0.90, // specific activity model
+    SAtarget: 95                // educational activity target, U/mg (assumption, not a spec)
+  };
+  const BASE = { A: 18, F: 4, D: 8, M: 1, S: 0.97, R: 0.88, train: false, qc: false };
+  const fI = A => Math.max(0.5, 1 - C.kA * (A - C.Aopt) ** 2);
+  const Lb = C.L0 + C.lD * BASE.D + C.lF * BASE.F;
+  const T0 = C.Y0 / (fI(BASE.A) * (1 - C.kF * BASE.F) * Math.exp(-C.kD * BASE.D) * C.H0 * BASE.R);
+  const ZERO = { d: 0, f: 0, r: 0, e: 0, a: 0 };
+
+  // The domino chain: operating condition -> intermediate state -> harvest -> recovery -> final
+  function chain(p, kappa, dist = ZERO) {
+    const inoc = fI(p.A);
+    const Ft = Math.max(0, p.F + dist.f);
+    const Dm = Math.max(0, p.D + dist.d);                         // sensor-reported
+    const hidden = Math.max(0, C.Sref - p.S) * kappa;              // unseen low-DO minutes
+    const Dt = Dm + hidden;                                        // true low-DO minutes
+    const fF = 1 - C.kF * Ft, fD = Math.exp(-C.kD * Dt);
+    const T = T0 * inoc * fF * fD;
+    const L = C.L0 + C.lD * Dt + C.lF * Ft;
+    const H = clamp(C.H0 - C.hL * (L - Lb), 0.5, 0.99);
+    const Reff = clamp(p.R + dist.r, 0.5, 0.99);
+    const harvested = T * H;
+    const Y = harvested * Reff * (1 + dist.e);
+    const sD = 1 - C.saD * (Dt - BASE.D), sA = 1 - C.saA * Math.max(0, p.A - C.Aact), sP = 1 - C.saPool * Math.max(0, p.R - C.Rpool);
+    const SA = Math.min(105, 100 * sD * sA * sP * (1 + dist.a));
+    return { inoc, Ft, Dm, hidden, Dt, fF, fD, T, L, H, Reff, harvested, Y, SA, sD, sA, sP, dist };
+  }
+
+  // ---- Scenarios ----
+  const SCEN = {
+    drift: {
+      id: 'drift', n: 1, name: 'Hidden Drift', seed: 1401, kappa: 60,
+      cur: { A: null, F: 6, D: 9, M: 1, S: 0.96, R: 0.88, train: false, qc: false },
+      solve: 'A', lo: 18, hi: 36, ramp: ['A'], feedSpike: 0.8, doSpike: 0.10, cal: 'cycle', resin: 'cycle',
+      blurb: 'Yield has slid gradually over months. Nothing alarming happened on any single day.',
+      key: { factor: 'A', partial: [], cats: ['Method', 'Material'], evidence: ['inoc', 'hist'],
+        answer: 'Seed-train scheduling drift: inoculum age at transfer crept from about 18 h to about 29 h after a shift-pattern change (batch 007 onward). Older inoculum lowers relative seed fitness in this model, which lowers titer. Harvest and recovery are unaffected. Feed-timing deviations are the most frequent event but contribute little loss, and their frequency did not change when yield fell.' },
+      notes: {
+        hist: 'Titer fell in step with final yield, while harvest and recovery efficiencies held near baseline. The loss appears to originate upstream of harvest.',
+        do: 'Logged DO excursions stay short (around 9 min per batch) across all 24 batches, with no trend.',
+        feed: 'Feed-timing deviations above 10 min occurred in roughly half of all batches, both before and after the decline began. Their frequency did not change when yield fell.',
+        inoc: 'Seed-train transfer age has crept from about 18 h to about 29 h since batch 007, coinciding with a change in the shift pattern (synthetic record).',
+        cal: 'DO probe calibrated on its 30-day schedule. The off-gas oxygen balance agrees with probe readings within a few minutes.',
+        dsp: 'Chromatography step yield stable near 0.88; resin replaced on schedule. Clarification turbidity unchanged.',
+        qc: 'Specific activity is slightly lower and noticeably more scattered in recent batches.'
+      }
+    },
+    trap: {
+      id: 'trap', n: 2, name: 'The Measurement Trap', seed: 2402, kappa: null,
+      cur: { A: 18.5, F: 5, D: 8, M: 1, S: 0.62, R: 0.88, train: false, qc: false },
+      solve: 'kappa', lo: 0, hi: 1200, ramp: ['S'], feedSpike: 0.15, doSpike: 0.05, cal: 'overdue', resin: 'cycle',
+      blurb: 'The control system says the fermentation is fine. The product says otherwise.',
+      key: { factor: 'S', partial: ['D'], cats: ['Measurement'], evidence: ['cal', 'qc'],
+        answer: 'Measurement failure: the DO probe replaced at batch 007 has not been recalibrated, so it reads high. The controller believes DO is in range while the culture actually spends about an hour per batch oxygen-limited. That hidden excursion lowers titer and activity, and the extra cell lysis lowers harvest efficiency one stage later (delayed effect). Tightening DO control alone does little, because the controller acts on the faulty signal.' },
+      notes: {
+        hist: 'Titer and harvest efficiency both declined, while recovery step yield is stable. Both fermentation and harvest are involved.',
+        do: 'Sensor-reported DO excursions look normal and flat (about 8 min per batch). These are the probe’s own readings.',
+        feed: 'Feed timing is within normal limits; occasional deviations show no trend.',
+        inoc: 'Inoculum age at transfer stable at 18–19 h.',
+        cal: 'DO probe replaced at batch 007; no calibration since (days since calibration now far past the 30-day policy). The off-gas oxygen balance implies roughly 70 min of low-DO time per batch, far longer than the probe reports.',
+        dsp: 'Chromatography step yield stable. Clarification turbidity (a lysis proxy) has risen, and harvest efficiency has fallen with it.',
+        qc: 'Specific activity is down about 8% from baseline. In this simulation’s assumptions, oxygen-limited production lowers activity.'
+      }
+    },
+    shock: {
+      id: 'shock', n: 3, name: 'Recovery Shock', seed: 3403, kappa: 60,
+      cur: { A: 18, F: 5, D: 14, M: 1, S: 0.97, R: null, train: false, qc: false },
+      solve: 'R', lo: 0.6, hi: 0.88, ramp: ['R', 'D'], feedSpike: 0.15, doSpike: 0.8, cal: 'cycle', resin: 'aging',
+      blurb: 'Fermentation alarms keep going off. Is that really where the product goes?',
+      key: { factor: 'R', partial: [], cats: ['Machine', 'Material'], evidence: ['dsp', 'hist'],
+        answer: 'Downstream recovery loss: chromatography resin has been used well past its effective life, and step yield drifted from 0.88 to about 0.76. Titer is near baseline. The frequent DO alarms are real but short and were equally common in the high-yield baseline batches, so they are not the main cause. Pushing recovery above 0.90 by widening fraction pooling raises quantity but lowers specific activity.' },
+      notes: {
+        hist: 'Titer stayed near baseline throughout. The loss appears after harvest.',
+        do: 'DO alarms of 10–25 min occur in about half of all batches, including the baseline batches that had normal yield.',
+        feed: 'Feed timing within normal limits; no trend.',
+        inoc: 'Inoculum age at transfer stable near 18 h.',
+        cal: 'DO probe calibrated on schedule; off-gas oxygen balance agrees with the probe.',
+        dsp: 'Chromatography step yield drifted from 0.88 to about 0.76 as resin cycle count rose past about 100 (synthetic). Harvest efficiency unchanged.',
+        qc: 'Specific activity stable near baseline. Quantity is lost, not activity.'
+      }
+    }
+  };
+
+  function bisect(fn, lo, hi, target) {
+    let flo = fn(lo) - target;
+    for (let i = 0; i < 80; i++) {
+      const mid = (lo + hi) / 2, fm = fn(mid) - target;
+      if ((fm > 0) === (flo > 0)) { lo = mid; flo = fm; } else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+  for (const sc of Object.values(SCEN)) {
+    if (sc.solve === 'kappa') sc.kappa = bisect(k => chain(sc.cur, k).Y, sc.lo, sc.hi, C.Ycur);
+    else sc.cur[sc.solve] = bisect(v => chain({ ...sc.cur, [sc.solve]: v }, sc.kappa).Y, sc.lo, sc.hi, C.Ycur);
+  }
+
+  // ---- Synthetic history: 24 batches, baseline window 1-6, ramp 7-18, current window 19-24 ----
+  const HIST_VARS = {
+    batch: { label: 'Batch', unit: '' },
+    A: { label: 'Inoculum age', unit: 'h', ev: 'inoc', d: 1 },
+    F: { label: 'Feed-timing deviation', unit: 'min', ev: 'feed', d: 0 },
+    Dm: { label: 'DO excursion (probe)', unit: 'min', ev: 'do', d: 0 },
+    calDays: { label: 'Days since DO calibration', unit: 'd', ev: 'cal', d: 0 },
+    Doff: { label: 'Low-DO time (off-gas est.)', unit: 'min', ev: 'cal', d: 0 },
+    titer: { label: 'Fermentation titer', unit: 'g/L', ev: 'hist', d: 2 },
+    lysis: { label: 'Lysis fraction (turbidity proxy)', unit: 'fraction', ev: 'dsp', d: 3 },
+    H: { label: 'Harvest efficiency', unit: 'fraction', ev: 'dsp', d: 3 },
+    resin: { label: 'Resin cycles', unit: 'cycles', ev: 'dsp', d: 0 },
+    R: { label: 'Recovery step yield', unit: 'fraction', ev: 'dsp', d: 3 },
+    Y: { label: 'Final yield', unit: 'g/L', ev: null, d: 3 },
+    SA: { label: 'Specific activity', unit: 'U/mg', ev: 'qc', d: 1 }
+  };
+  const histCache = {};
+  function history(id) {
+    if (histCache[id]) return histCache[id];
+    const sc = SCEN[id], r = rng(sc.seed), rows = [];
+    for (let i = 0; i < 24; i++) {
+      const w = i < 6 ? 0 : i < 18 ? (i - 5) / 13 : 1;
+      const p = { ...BASE };
+      for (const k of ['A', 'F', 'D', 'S', 'R']) p[k] = BASE[k] + (sc.cur[k] - BASE[k]) * (sc.ramp.includes(k) ? w : (i < 6 ? 0 : 1));
+      p.A = Math.max(12, p.A + normal(r) * 0.6);
+      p.F = Math.max(0, p.F + normal(r) * 1.5 + (r() < sc.feedSpike ? 10 + r() * 12 : 0));
+      p.D = Math.max(0, p.D + normal(r) * 1.5 + (r() < sc.doSpike ? 10 + r() * 15 : 0));
+      p.R = p.R + normal(r) * 0.006;
+      const dist = { d: 0, f: 0, r: 0, e: normal(r) * 0.012, a: normal(r) * 0.015 * (1 + 0.15 * Math.max(0, p.A - C.Aact)) };
+      const c = chain(p, sc.kappa, dist);
+      const calDays = sc.cal === 'overdue' ? (i < 6 ? (i * 5) % 30 + 2 : 8 + (i - 6) * 9) : (i * 7) % 30 + 1;
+      const resin = sc.resin === 'aging' ? 20 + i * 6 : (i * 6) % 48 + 6;
+      rows.push({ batch: i + 1, A: p.A, F: c.Ft, Dm: c.Dm, calDays, Doff: Math.max(0, c.Dt + normal(r) * 3), titer: c.T * (1 + normal(r) * 0.01),
+        lysis: c.L, H: c.H, resin, R: c.Reff, Y: c.Y, SA: c.SA, S: p.S });
+    }
+    const norm = {};
+    [[0, 6, C.Y0, 'baseline'], [18, 24, C.Ycur, 'current']].forEach(([a, b, t, nm]) => {
+      const m = rows.slice(a, b).reduce((s, x) => s + x.Y, 0) / (b - a);
+      norm[nm] = t / m;
+      for (let i = a; i < b; i++) rows[i].Y *= t / m;
+    });
+    histCache[id] = { rows, norm };
+    return histCache[id];
+  }
+
+  // ---- Seeded campaign projection (common random numbers => fair comparisons) ----
+  const MSCALE = [1.4, 1.0, 0.65];
+  function dists(id, p) {
+    const r = rng(SCEN[id].seed + 7919), out = [];
+    const mS = MSCALE[p.M ?? 1], tS = p.train ? 0.7 : 1;
+    for (let j = 0; j < 8; j++) {
+      const z = [normal(r), normal(r), normal(r), normal(r), normal(r)];
+      out.push({ d: z[0] * 6 * mS, f: z[1] * 3 * mS, r: z[2] * 0.008 * tS, e: z[3] * 0.012 * tS, a: z[4] * 0.015 * tS * (1 + 0.15 * Math.max(0, p.A - C.Aact)) });
+    }
+    return out;
+  }
+  const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
+
+  // ---- Interventions ----
+  const IV = {
+    inoc_sop: { name: 'Tighten seed-train scheduling', cost: 10, ctrl: 'A', cat: 'Operational', effect: 'Lets you set inoculum age at transfer.', limits: 'Does not touch oxygen, feed or downstream causes.', kpi: 'Inoculum age at transfer (h)' },
+    training: { name: 'SOP consistency training', cost: 10, ctrl: 'train', cat: 'Training', effect: 'Cuts unexplained batch noise and recovery jitter by 30% (model assumption).', limits: 'Does not shift the average if a physical cause remains.', kpi: 'Batch-to-batch CV of yield' },
+    feed_ctrl: { name: 'Improve feed-timing control', cost: 18, ctrl: 'F', cat: 'Operational', effect: 'Lets you reduce feed-timing deviation.', limits: 'Feed timing has a small per-minute effect in this model.', kpi: 'Feed-timing deviation (min)' },
+    do_ctrl: { name: 'Tune oxygen control (aeration/agitation)', cost: 20, ctrl: 'D', cat: 'Operational', effect: 'Lets you reduce the DO excursion the controller sees.', limits: 'The controller can only correct what the probe reports.', kpi: 'Low-DO minutes per batch' },
+    sensor_cal: { name: 'Recalibrate and verify DO probe', cost: 12, ctrl: 'S', cat: 'Measurement', effect: 'Raises sensor reliability, removing unseen low-DO time.', limits: 'No benefit if the probe is already reliable.', kpi: 'Probe vs off-gas agreement' },
+    mon_high: { name: 'High-intensity monitoring', cost: 8, ctrl: 'M', cat: 'Monitoring', effect: 'Shrinks seeded DO and feed disturbances by 35%.', limits: 'Cannot see what a faulty sensor hides.', kpi: 'Disturbance minutes per batch' },
+    dsp_change: { name: 'Re-optimise recovery step (resin/pooling)', cost: 22, ctrl: 'R', cat: 'Recovery', effect: 'Lets you set chromatography step yield.', limits: 'Above 0.90, wider pooling lowers specific activity.', kpi: 'Step yield and specific activity' },
+    qc_targeted: { name: 'Targeted QC measurements', cost: 6, ctrl: 'qc', cat: 'Quality', effect: 'Adds activity testing on every projected batch; lowers quality risk score.', limits: 'Detects problems; does not fix them.', kpi: 'Activity CV, out-of-target count' }
+  };
+  function activeIV(p, cur) {
+    const a = [];
+    if (Math.abs(p.A - cur.A) > 0.25) a.push('inoc_sop');
+    if (p.train) a.push('training');
+    if (Math.abs(p.F - cur.F) > 0.5) a.push('feed_ctrl');
+    if (Math.abs(p.D - cur.D) > 0.5) a.push('do_ctrl');
+    if (Math.abs(p.S - cur.S) > 0.005) a.push('sensor_cal');
+    if (p.M === 2) a.push('mon_high');
+    if (Math.abs(p.R - cur.R) > 0.0025) a.push('dsp_change');
+    if (p.qc) a.push('qc_targeted');
+    return a;
+  }
+  const ivCost = (p, cur) => activeIV(p, cur).reduce((s, k) => s + IV[k].cost, 0);
+
+  function risk(p, c) {
+    let r = 0.25 * c.Dt + 60 * Math.max(0, C.Sref - p.S) + 0.2 * c.Ft + 150 * Math.max(0, p.R - C.Rpool) + Math.abs(p.A - C.Aopt) * 1.0;
+    r += p.M === 0 ? 10 : p.M === 2 ? -5 : 0;
+    if (p.train) r -= 5; if (p.qc) r -= 5;
+    return clamp(r, 0, 100);
+  }
+
+  // Full run: batch 025 (draw 0) + 8-batch projection
+  function simulate(id, p) {
+    const sc = SCEN[id], ds = dists(id, p);
+    const proj = ds.map(d => chain(p, sc.kappa, d));
+    const Ys = proj.map(x => x.Y), SAs = proj.map(x => x.SA);
+    const batch = proj[0], nominal = chain(p, sc.kappa);
+    const Ym = mean(Ys), cost = ivCost(p, sc.cur);
+    return {
+      settings: { ...p }, batch, nominal, proj, Ym, Ysd: sd(Ys), cv: 100 * sd(Ys) / Ym, SAm: mean(SAs), SAsd: sd(SAs),
+      SAcv: 100 * sd(SAs) / mean(SAs), relBase: (Ym - C.Y0) / C.Y0, relCur: (Ym - C.Ycur) / C.Ycur, cost, iv: activeIV(p, sc.cur),
+      risk: risk(p, nominal), belowSA: SAs.filter(x => x < C.SAtarget).length
+    };
+  }
+
+  // Pareto: estimated loss contribution per factor (restore one factor to baseline, others at current)
+  const FACTORS = [
+    { k: 'A', name: 'Inoculum age', ev: 'inoc', cat: 'Method', flag: r => r.A > 22, flagTxt: 'age > 22 h' },
+    { k: 'F', name: 'Feed timing', ev: 'feed', cat: 'Method', flag: r => r.F > 10, flagTxt: 'deviation > 10 min' },
+    { k: 'D', name: 'DO control (as reported)', ev: 'do', cat: 'Machine', flag: r => r.Dm > 15, flagTxt: 'probe excursion > 15 min' },
+    { k: 'S', name: 'DO sensor reliability', ev: 'cal', cat: 'Measurement', flag: r => r.calDays > 30, flagTxt: 'calibration overdue > 30 d' },
+    { k: 'R', name: 'Downstream recovery', ev: 'dsp', cat: 'Machine', flag: r => r.R < 0.84, flagTxt: 'step yield < 0.84' }
+  ];
+  function pareto(id) {
+    const sc = SCEN[id], rows = history(id).rows, Yc = chain(sc.cur, sc.kappa).Y;
+    const items = FACTORS.map(f => {
+      const p = { ...sc.cur, [f.k]: BASE[f.k] };
+      return { ...f, loss: Math.max(0, chain(p, sc.kappa).Y - Yc), freq: rows.filter(f.flag).length };
+    });
+    const total = chain(BASE, sc.kappa).Y - Yc;
+    return { items, total, interaction: total - items.reduce((s, x) => s + x.loss, 0) };
+  }
+
+  return { C, BASE, T0, Lb, SCEN, IV, FACTORS, HIST_VARS, MSCALE, chain, history, simulate, pareto, activeIV, ivCost, risk, rng, normal, mean, sd, clamp, fI };
+})();
+
+
+/* ===================== CASE 014 MODEL =====================
+   Synthetic dataset and intervention simulator built on the BatchShift engine
+   (same equations as BatchShift_Quantitative_Workbook.xlsx, Model sheet).
+   All values are fictional educational data. */
+const CASE = (() => {
+  const E = ENGINE, C = E.C;
+  // Current practice = workbook Model sheet column "S1 current" (yields exactly 4.300 g/L)
+  const CUR = { ...E.SCEN.drift.cur, M: 1, train: false, qc: false };
+  E.SCEN.case014 = { ...E.SCEN.drift, id: 'case014', n: 14, name: 'Case 014', seed: 1414, cur: CUR };
+
+  // Designed inoculum ages (h). A shift-pattern change at B007 lets seed cultures for
+  // night-start batches wait overnight; day batches also drift, more slowly.
+  const AGE = [18.2, 17.6, 18.5, 18.0, 17.8, 18.4, 19.5, 23.0, 20.5, 26.5, 22.0, 28.0, 23.5, 29.5, 31.0, 24.5, 25.5, 31.5, 26.0, 32.5, 27.5, 33.0, 30.5, 26.5];
+  const SHIFT = AGE.map((_, i) => (i % 2 ? 'Night' : 'Day'));
+  const DOC_ERR = new Set([8, 12, 14, 20, 15]);        // batch numbers with documentation-error reports
+  const LOT = new Set([5, 17]);                        // raw-material lot changes
+  const FILTER = new Set([11, 22]);                    // downstream filter changeouts
+  const CAL_OVERDUE = new Set([9, 16, 23]);            // DO calibration overdue at batch start
+
+  function build() {
+    const r = E.rng(1414), N = () => E.normal(r), rows = [];
+    for (let i = 0; i < 24; i++) {
+      const b = i + 1, night = SHIFT[i] === 'Night', w = i < 6 ? 0 : 1;
+      const F = Math.max(0, (night ? 5 : 3) + 1.5 * N() + ((night ? r() < 0.75 : r() < 0.30) ? 9 + r() * 10 : 0));
+      const D = Math.max(0, 8 + w * 1 + 1.5 * N() + (r() < 0.25 ? 9 + r() * 8 : 0));
+      const S = i < 6 ? 0.97 : 0.96, R = 0.88 + 0.006 * N();
+      const dist = { d: 0, f: 0, r: 0, e: 0.012 * N(), a: 0.015 * N() * (1 + 0.15 * Math.max(0, AGE[i] - C.Aact)) };
+      const c = E.chain({ A: AGE[i], F, D, S, R }, 60, dist);
+      const day = new Date(Date.UTC(2026, 3, 6) + i * 7.6 * 864e5);
+      rows.push({ batch: b, id: 'B' + String(b).padStart(3, '0'), date: day.toISOString().slice(0, 10), shift: SHIFT[i], A: AGE[i], F: c.Ft, D: c.Dm,
+        calDays: CAL_OVERDUE.has(b) ? 34 + (b % 5) : 6 + (b * 7) % 22, titer: c.T, H: c.H, R: c.Reff, Y: c.Y, SA: c.SA,
+        docErr: DOC_ERR.has(b), lot: LOT.has(b), filter: FILTER.has(b) });
+    }
+    const norm = {};
+    [[0, 6, C.Y0, 'baseline'], [18, 24, C.Ycur, 'current']].forEach(([a, z, t, k]) => {
+      const m = rows.slice(a, z).reduce((s, x) => s + x.Y, 0) / (z - a); norm[k] = t / m;
+      for (let j = a; j < z; j++) rows[j].Y *= t / m;
+    });
+    // transition-window yields scaled by an interpolated factor so the series is continuous
+    for (let j = 6; j < 18; j++) rows[j].Y *= norm.baseline + (norm.current - norm.baseline) * (j - 5) / 13;
+    rows.forEach(x => { x.loss = x.Y < 4.6; });
+    return { rows, norm };
+  }
+  const DATA = build();
+  const rows = DATA.rows;
+  const mean = a => a.reduce((s, x) => s + x, 0) / (a.length || 1);
+
+  // Deviation reports (what QA logged). Late seed transfer was NOT a deviation category:
+  // the old SOP allowed 12–36 h, so it never appears in the deviation log.
+  const PARETO = [
+    { cat: 'Feed-timing deviation', rule: 'feed start > 10 min off schedule', n: rows.filter(x => x.F > 10).length, fish: 'Method' },
+    { cat: 'DO alarm', rule: 'probe below setpoint > 15 min', n: rows.filter(x => x.D > 15).length, fish: 'Machine' },
+    { cat: 'Batch-record documentation error', rule: 'QA documentation finding', n: rows.filter(x => x.docErr).length, fish: 'Manpower' },
+    { cat: 'DO calibration overdue', rule: '> 30 days since calibration', n: rows.filter(x => x.calDays > 30).length, fish: 'Measurement' },
+    { cat: 'Raw-material lot change', rule: 'new media lot', n: rows.filter(x => x.lot).length, fish: 'Material' },
+    { cat: 'Filter changeout', rule: 'unplanned downstream filter change', n: rows.filter(x => x.filter).length, fish: 'Machine' }
+  ].sort((a, b) => b.n - a.n);
+
+  // Interventions for Round 4 (costs in fictional credits)
+  const BUDGET = 40;
+  const IVS = [
+    { id: 'seed', name: 'Seed-train SOP: transfer at 16–20 h', cost: 12, apply: p => { p.A = 18; }, effect: 'Sets inoculum age at transfer to 18 h.', limit: 'Needs a scheduling change so night-start batches are not left waiting.' },
+    { id: 'feed', name: 'Feed-timing monitoring and alarm', cost: 15, apply: p => { p.F = 3; }, effect: 'Cuts feed-start deviation to about 3 min.', limit: 'Feed timing has a small effect on titer in this model.' },
+    { id: 'do', name: 'Oxygen-control investigation', cost: 18, apply: p => { p.D = 6; }, effect: 'Cuts probe-reported low-DO time to 6 min.', limit: 'DO time is already close to baseline.' },
+    { id: 'cal', name: 'DO sensor calibration programme', cost: 8, apply: p => { p.S = 0.97; }, effect: 'Restores sensor reliability to 0.97 (no unseen low-DO time).', limit: 'The sensor is only slightly off in this case.' },
+    { id: 'pool', name: 'Widen chromatography pooling', cost: 20, apply: p => { p.R = 0.93; }, effect: 'Raises recovery step yield to 0.93.', limit: 'Wider pooling collects more impure fractions: activity falls.' },
+    { id: 'qc', name: 'Targeted QC and high-intensity monitoring', cost: 6, apply: p => { p.M = 2; p.qc = true; }, effect: 'Shrinks DO and feed disturbances by 35%; activity tested every batch.', limit: 'Detects problems; does not move the average.' },
+    { id: 'night', name: 'Night-shift retraining', cost: 10, apply: p => { p.train = true; }, effect: 'Reduces batch-to-batch noise by 30% (model assumption).', limit: 'Does not change seed age or feed timing.' }
+  ];
+  function outcome(ids) {
+    const p = { ...CUR }; let cost = 0;
+    (ids || []).forEach(id => { const iv = IVS.find(x => x.id === id); if (iv) { iv.apply(p); cost += iv.cost; } });
+    const s = E.simulate('case014', p);
+    return { settings: p, cost, Ym: s.Ym, nominal: s.nominal.Y, SAm: s.SAm, cv: s.cv, risk: s.risk, relCur: (s.Ym - C.Ycur) / C.Ycur, relBase: (s.Ym - C.Y0) / C.Y0, belowSA: s.belowSA };
+  }
+
+  const SUSPECTS = [
+    { id: 'inoc', icon: '🧫', name: 'Inoculum age and condition', short: 'How long the seed culture grows before it is transferred to the main fermenter.', more: 'Seed cultures are prepared by the upstream team. The SOP allows transfer anywhere between 12 and 36 hours. A new shift pattern started in April.' },
+    { id: 'feed', icon: '⏱️', name: 'Feed-timing deviations', short: 'Nutrient feed started earlier or later than scheduled.', more: 'Feed-timing deviations are the most frequently logged deviation at NovaBio. Most are under 20 minutes.' },
+    { id: 'do', icon: '🫧', name: 'Dissolved oxygen excursions', short: 'Periods when oxygen in the broth dropped below setpoint.', more: 'The DO probe raises an alarm after 15 minutes below setpoint. Alarms appear in roughly a quarter of batches.' },
+    { id: 'dsp', icon: '⚗️', name: 'Downstream recovery losses', short: 'Product lost during clarification and chromatography.', more: 'Recovery step yield is checked every batch. Two unplanned filter changeouts were recorded.' },
+    { id: 'sensor', icon: '📟', name: 'Measurement or sensor reliability', short: 'Instruments drifting or overdue for calibration.', more: 'The DO probe calibration was overdue at three batch starts this year.' },
+    { id: 'shift', icon: '🌙', name: 'Apparent operator-shift differences', short: 'Low-yield batches seem to cluster on the night shift.', more: 'Production supervisors have noticed that several of the worst batches started on the night shift.' }
+  ];
+
+  const stats = {
+    baseMean: mean(rows.slice(0, 6).map(x => x.Y)), curMean: mean(rows.slice(18).map(x => x.Y)),
+    day: mean(rows.filter(x => x.shift === 'Day').map(x => x.Y)), night: mean(rows.filter(x => x.shift === 'Night').map(x => x.Y)),
+    dayA: mean(rows.filter(x => x.shift === 'Day').map(x => x.A)), nightA: mean(rows.filter(x => x.shift === 'Night').map(x => x.A)),
+    dayF: mean(rows.filter(x => x.shift === 'Day').map(x => x.F)), nightF: mean(rows.filter(x => x.shift === 'Night').map(x => x.F))
+  };
+  // Loss contribution (model): restore one factor at a time from current practice
+  const lossShare = (() => {
+    const yc = E.chain(CUR, 60).Y, tot = C.Y0 - yc;
+    return ['A', 'F', 'D', 'S', 'R'].map(k => ({ k, loss: E.chain({ ...CUR, [k]: E.BASE[k] }, 60).Y - yc })).map(x => ({ ...x, share: x.loss / tot }));
+  })();
+  return { rows, norm: DATA.norm, PARETO, IVS, BUDGET, outcome, SUSPECTS, stats, CUR, lossShare, mean };
+})();
+
+
+/* ===================== CASE 014 QUESTIONS (public: prompts and options only) =====================
+   Points, accepted answers and explanations live in the encrypted answer key. */
+const Q = {
+  rounds: {
+    r1: { name: 'The Suspect Lineup', mins: 3, max: 10, dmaic: 'Define', skill: 'State the problem precisely and record a starting hypothesis before looking at data.' },
+    r2: { name: 'Crack the Evidence', mins: 6, max: 40, dmaic: 'Measure + Analyze', skill: 'Read batch records, use a Pareto chart correctly, classify causes on a fishbone, and spot confounding.' },
+    r3: { name: 'The Final Accusation', mins: 4, max: 30, dmaic: 'Analyze', skill: 'Commit to the hypothesis the evidence supports, name what is still uncertain, and choose how to verify.' },
+    r4: { name: 'Rescue the Next Batch', mins: 4, max: 20, dmaic: 'Improve + Control', skill: 'Pick interventions within budget, protect quality as well as yield, and monitor the result.' }
+  },
+  list: [
+    // ---------- Round 1 ----------
+    { id: 'lead', r: 'r1', max: 5, kind: 'suspect', prompt: 'Which suspect is your team’s leading hypothesis?' },
+    { id: 'why', r: 'r1', max: 5, kind: 'choice', prompt: 'What makes it your leading suspect?', opts: {
+      a: 'It started changing at about the same time yield started falling',
+      b: 'It is logged most often in the deviation records',
+      c: 'The worst batches seem to happen on that shift',
+      d: 'It sounds like the most complicated step',
+      e: 'Gut feeling' }, text: 'Explain in one sentence (reviewed by the facilitator)' },
+    // ---------- Round 2: Station A ----------
+    { id: 'a1', r: 'r2', st: 'A', max: 6, kind: 'choice', prompt: 'Which variable’s trend deserves closer investigation?', opts: {
+      inoc: 'Inoculum age at transfer', feed: 'Feed-timing deviation', do: 'DO excursion (probe)', dsp: 'Recovery step yield', sa: 'Specific activity' } },
+    { id: 'a2', r: 'r2', st: 'A', max: 4, kind: 'choice', prompt: 'At which batch does that change begin?', opts: {
+      B005: 'B005', B006: 'B006', B007: 'B007', B008: 'B008', B009: 'B009', B010: 'B010', B012: 'B012' } },
+    // ---------- Station B ----------
+    { id: 'b1', r: 'r2', st: 'B', max: 5, kind: 'choice', prompt: 'Using the metric shown on the chart, which category should be investigated first?', opts: {
+      feed: 'Feed-timing deviation', do: 'DO alarm', doc: 'Batch-record documentation error', cal: 'DO calibration overdue', lot: 'Raw-material lot change', filt: 'Filter changeout' } },
+    { id: 'b2', r: 'r2', st: 'B', max: 5, kind: 'choice', prompt: 'What does the tallest bar tell you?', opts: {
+      a: 'It is the first place to look, but frequency is not the same as yield impact; we need trend or loss data to confirm',
+      b: 'It is the root cause, because it has the tallest bar',
+      c: 'Pareto charts are not useful for this problem',
+      d: 'Anything not in the deviation log cannot be a cause',
+      e: 'The chart only counts what QA logged, so a cause that is within SOP limits would not appear on it at all' } },
+    // ---------- Station C ----------
+    { id: 'c1', r: 'r2', st: 'C', max: 10, kind: 'fishbone', prompt: 'Place each cause on the fishbone.', items: {
+      sensor: 'DO sensor calibration overdue', feed: 'Feed-timing deviation', inoc: 'Inoculum (seed) age variability', staff: 'Night-shift staffing levels' },
+      cats: ['Manpower', 'Method', 'Machine', 'Material', 'Measurement', 'Environment'] },
+    // ---------- Station D ----------
+    { id: 'd1', r: 'r2', st: 'D', max: 4, kind: 'choice', prompt: 'Does the evidence establish that the night shift itself caused the yield decline?', opts: {
+      yes: 'Yes: night batches have lower average yield',
+      no: 'No: night batches also differ in other process conditions, so the shift effect is confounded',
+      none: 'We cannot conclude anything from these records' } },
+    { id: 'd2', r: 'r2', st: 'D', max: 3, kind: 'choice', prompt: 'Which variable could explain the night-shift pattern?', opts: {
+      inoc: 'Inoculum age at transfer', feed: 'Feed-timing deviation', do: 'DO excursion', dsp: 'Recovery step yield', skill: 'Operator skill (not measured)' } },
+    { id: 'd3', r: 'r2', st: 'D', max: 3, kind: 'choice', prompt: 'Which comparison would best separate the explanations?', opts: {
+      a: 'Compare day and night batches that had similar inoculum ages',
+      b: 'Compare overall day and night averages again with more batches',
+      c: 'Interview the night-shift operators',
+      d: 'Move all night operators to the day shift and see what happens' } },
+    // ---------- Round 3 ----------
+    { id: 'primary', r: 'r3', max: 10, kind: 'suspect', prompt: 'Primary root-cause hypothesis' },
+    { id: 'extra', r: 'r3', max: 4, kind: 'multi', limit: 2, prompt: 'Up to two additional contributing factors (optional)', opts: {
+      inoc: 'Inoculum age', feed: 'Feed-timing deviations', do: 'DO excursions', dsp: 'Downstream recovery', sensor: 'Sensor reliability', shift: 'Night shift' } },
+    { id: 'ev', r: 'r3', max: 6, kind: 'choice', prompt: 'Strongest piece of supporting evidence', opts: {
+      a: 'Inoculum age rose from about 18 h to about 30 h from B007 as yield fell, and day and night batches with similar seed age had similar yields',
+      b: 'Inoculum age is higher in recent batches',
+      c: 'Feed-timing deviations are the most frequently logged deviation',
+      d: 'Night-shift batches have lower average yield',
+      e: 'DO alarms occurred in some low-yield batches' } },
+    { id: 'alt', r: 'r3', max: 4, kind: 'choice', prompt: 'One alternative explanation that remains possible', opts: {
+      a: 'An unlogged change at the same time (for example seed strain or media preparation) could also explain it',
+      b: 'Feed timing may contribute more than the records suggest',
+      c: 'The night shift itself is the cause',
+      d: 'No alternative explanation remains',
+      e: 'Downstream recovery losses' }, text: 'Add your reasoning (reviewed by the facilitator)' },
+    { id: 'conf', r: 'r3', max: 2, kind: 'scale', prompt: 'How confident is your team? (1 = guess, 5 = strongly supported)' },
+    { id: 'act', r: 'r3', max: 2, kind: 'choice', prompt: 'Immediate corrective action', opts: {
+      a: 'Restore seed transfer to 16–20 h and fix night-start scheduling',
+      b: 'Retrain the night shift',
+      c: 'Add feed-timing alarms',
+      d: 'Widen chromatography pooling to recover more product' } },
+    { id: 'met', r: 'r3', max: 2, kind: 'choice', prompt: 'Metric to monitor to confirm improvement', opts: {
+      a: 'Inoculum age at transfer for every batch, with final yield on an individuals (I-MR) chart',
+      b: 'Number of night shifts worked',
+      c: 'Count of feed deviations only',
+      d: 'Monthly average yield only' } },
+    // ---------- Round 4 ----------
+    { id: 'plan', r: 'r4', max: 20, kind: 'interventions', prompt: 'Choose interventions within your budget', text: 'Why this combination? (reviewed by the facilitator)' }
+  ],
+  reflect: [
+    ['strong', 'What was the strongest piece of evidence?'], ['herring', 'Which clue misled you, and how did you catch it?'],
+    ['hard', 'What was the hardest jury question?'], ['final', 'What intervention did you choose, and why?'], ['unc', 'What is the main remaining uncertainty?']
+  ]
+};
+Q.byId = Object.fromEntries(Q.list.map(q => [q.id, q]));
+Q.inRound = r => Q.list.filter(q => q.r === r);
+
+/* ===================== CASE 014 SCORING (public rules; points come from the encrypted key) ===================== */
+const SCORE = (() => {
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const pick = (map, v) => (map && v != null && map[v] != null) ? map[v] : 0;
+  // A = answers: { r1:{lead:{v,...}}, r2:{...}, ... } ; K = decrypted key ; adj = {qid:{points,reason}}
+  function team(A, K, adj) {
+    const get = (r, q) => A?.[r]?.[q]?.v;
+    const P = K.pts, per = {}, why = {};
+    // Round 1
+    const lead = get('r1', 'lead');
+    if (lead) {
+      let p = pick(P.lead, lead.lead), note = `Leading suspect "${lead.lead}" = ${p}.`;
+      if (p < 2 && (lead.sel || []).includes(K.correctPrimary)) { p = 2; note += ' Partial credit: the supported factor was among the selected suspects.'; }
+      per.lead = p; why.lead = note;
+    }
+    const w = get('r1', 'why'); if (w != null) { per.why = pick(P.why, w); why.why = `Reasoning basis "${w}".`; }
+    // Round 2
+    for (const q of ['a1', 'a2', 'b1', 'b2', 'd1', 'd2', 'd3']) { const v = get('r2', q); if (v != null) { per[q] = pick(P[q], v); why[q] = `Answer "${v}".`; } }
+    const fb = get('r2', 'c1');
+    if (fb) { let s = 0; const parts = []; for (const [item, cat] of Object.entries(fb)) { const p = pick(P.c1[item], cat); s += p; parts.push(`${item}→${cat}: ${p}`); } per.c1 = Math.min(10, s); why.c1 = parts.join('; ') + '.'; }
+    // Round 3
+    const prim = get('r3', 'primary');
+    if (prim) { per.primary = pick(P.primary, prim.lead ?? prim); why.primary = `Primary "${prim.lead ?? prim}".`; }
+    const ex = get('r3', 'extra');
+    if (ex) {
+      const f = ex.includes('feed'), sh = ex.includes('shift');
+      let p = f ? 4 : 2; if (sh) p = Math.max(0, p - 2);
+      if (!f && ex.length && !sh && ex.every(x => !K.minor.includes(x))) p = 1;
+      per.extra = p; why.extra = `Extras [${ex.join(', ') || 'none'}]: ${f ? 'includes the supported minor contributor' : 'misses feed timing'}${sh ? '; names the confounded red herring' : ''}.`;
+    }
+    for (const q of ['ev', 'alt', 'act', 'met']) { const v = get('r3', q); if (v != null) { per[q] = pick(P[q], v); why[q] = `Answer "${v}".`; } }
+    const conf = get('r3', 'conf');
+    if (conf != null) {
+      const ok = (prim?.lead ?? prim) === K.correctPrimary;
+      per.conf = ok ? (conf >= 3 ? 2 : 1) : (conf <= 2 ? 2 : conf === 3 ? 1 : 0);
+      why.conf = `Confidence ${conf} with a ${ok ? 'supported' : 'unsupported'} hypothesis: ${per.conf === 2 ? 'well calibrated' : 'over- or under-confident'}.`;
+    }
+    // Round 4
+    const plan = get('r4', 'plan');
+    if (plan && Array.isArray(plan.ids)) {
+      const o = CASE.outcome(plan.ids), C = ENGINE.C;
+      if (o.cost > CASE.BUDGET) { per.plan = 0; why.plan = 'Over budget: not feasible.'; }
+      else {
+        const y = 8 * clamp((o.Ym - C.Ycur) / (C.Y0 - C.Ycur), 0, 1);
+        const q = 4 * clamp((o.SAm - 94) / 5, 0, 1);
+        const c = 1.5 * clamp((2.1 - o.cv) / 0.6, 0, 1) + 1.5 * clamp((20 - o.risk) / 20, 0, 1);
+        const f = plan.ids.length ? 2 : 0;
+        const hyp = prim?.lead ?? prim, fix = K.fixFor[hyp], hasFix = fix && plan.ids.includes(fix);
+        const al = hyp === K.correctPrimary && hasFix ? 3 : plan.ids.includes(K.fixFor[K.correctPrimary]) ? 1 : 0;
+        per.plan = +(y + q + c + f + al).toFixed(2);
+        why.plan = `Yield ${o.Ym.toFixed(3)} g/L → ${y.toFixed(1)}/8; activity ${o.SAm.toFixed(1)} U/mg → ${q.toFixed(1)}/4; CV ${o.cv.toFixed(2)}% and risk ${o.risk.toFixed(0)} → ${c.toFixed(1)}/3; feasibility ${f}/2; evidence alignment ${al}/3.`;
+      }
+    }
+    // Facilitator adjustments override the automatic score for that question
+    for (const [q, a] of Object.entries(adj || {})) if (a && typeof a.points === 'number') { per[q] = clamp(a.points, 0, Q.byId[q].max); why[q] = (why[q] ? why[q] + ' ' : '') + `Facilitator set ${a.points}: ${a.reason}`; }
+    const rt = { r1: 0, r2: 0, r3: 0, r4: 0 };
+    for (const [q, p] of Object.entries(per)) rt[Q.byId[q].r] += p;
+    const total = rt.r1 + rt.r2 + rt.r3 + rt.r4;
+    const correct = Object.entries(per).filter(([q, p]) => p >= Q.byId[q].max - 1e-9).length;
+    return { per, why, rounds: rt, total: +total.toFixed(2), correct, reasoning: rt.r3, analysis: rt.r2, intervention: rt.r4 };
+  }
+  // Deterministic ranking: total, then Round 3 reasoning, then Round 2 analysis; equal on all three = shared rank
+  function rank(list) {
+    const s = [...list].sort((a, b) => b.total - a.total || b.reasoning - a.reasoning || b.analysis - a.analysis || a.name.localeCompare(b.name));
+    let prev = null, rk = 0;
+    s.forEach((t, i) => { const key = [t.total, t.reasoning, t.analysis].map(x => x.toFixed(2)).join('|'); if (key !== prev) { rk = i + 1; prev = key; } t.rank = rk; });
+    return s;
+  }
+  return { team, rank, MAX: { r1: 10, r2: 40, r3: 30, r4: 20, total: 100 } };
+})();
+
+const KEY_ENC={"salt": "ensqaHwSoMmUon4CC+Hc/A==", "iv": "aQwo7gqXf+7cZxXI", "ct": "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", "iter": 250000};
+
+/* ===================== CASE 014 BACKEND =====================
+   One small interface, two implementations:
+   - FirebaseDB: Firebase Realtime Database + anonymous auth (real cross-device multiplayer)
+   - DemoDB: this-device-only store shared between browser tabs (clearly labelled demo mode)
+   Interface: init(), uid, mode, now(), get(p), set(p,v), update(p,obj), push(p,v)->key, on(p,cb)->unsub, claim(p,v)->bool */
+const FB_VER = '10.12.2';
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + src)); document.head.appendChild(s); }); }
+
+class FirebaseDB {
+  constructor(cfg) { this.cfg = cfg; this.mode = 'live'; this.offset = 0; }
+  async init() {
+    if (!window.firebase) {
+      const base = `https://cdn.jsdelivr.net/npm/firebase@${FB_VER}/`;
+      await loadScript(base + 'firebase-app-compat.js');
+      await loadScript(base + 'firebase-auth-compat.js');
+      await loadScript(base + 'firebase-database-compat.js');
+    }
+    const name = 'case014-' + this.cfg.projectId;
+    this.app = firebase.apps.find(a => a.name === name) || firebase.initializeApp(this.cfg, name);
+    const cred = await this.app.auth().signInAnonymously();
+    this.uid = cred.user.uid;
+    this.db = this.app.database();
+    this.db.ref('.info/serverTimeOffset').on('value', s => { this.offset = s.val() || 0; });
+    return this;
+  }
+  now() { return Date.now() + this.offset; }
+  ref(p) { return this.db.ref(p); }
+  async get(p) { return (await this.ref(p).once('value')).val(); }
+  set(p, v) { return this.ref(p).set(v); }
+  update(p, o) { return this.ref(p).update(o); }
+  async push(p, v) { const r = this.ref(p).push(); await r.set(v); return r.key; }
+  on(p, cb) { const r = this.ref(p), h = s => cb(s.val()); r.on('value', h, e => console.warn('listen', p, e.message)); return () => r.off('value', h); }
+  async claim(p, v) { const r = await this.ref(p).transaction(cur => (cur === null ? v : undefined)); return r.committed; }
+}
+
+/* Demo store. Applies the same access rules as database.rules.json so demo behaviour matches live behaviour. */
+class DemoDB {
+  constructor() { this.mode = 'demo'; this.subs = []; }
+  async init() {
+    try { this.uid = sessionStorage.getItem('case014-demo-uid'); } catch (e) { }
+    if (!this.uid) { this.uid = 'demo-' + Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem('case014-demo-uid', this.uid); } catch (e) { } }
+    try { this.data = JSON.parse(localStorage.getItem('case014-demo-db')) || {}; } catch (e) { this.data = {}; }
+    try { this.bc = new BroadcastChannel('case014-demo'); this.bc.onmessage = m => { this.data = m.data; this.fire(); }; } catch (e) { }
+    return this;
+  }
+  now() { return Date.now(); }
+  split(p) { return p.split('/').filter(Boolean); }
+  read(p) { return this.split(p).reduce((a, k) => (a == null ? null : a[k] ?? null), this.data); }
+  write(p, v) {
+    const ks = this.split(p), last = ks.pop(); let o = this.data;
+    for (const k of ks) { if (o[k] == null || typeof o[k] !== 'object') o[k] = {}; o = o[k]; }
+    if (v === null || v === undefined) delete o[last]; else o[last] = JSON.parse(JSON.stringify(v));
+  }
+  commit() { try { localStorage.setItem('case014-demo-db', JSON.stringify(this.data)); } catch (e) { } try { this.bc && this.bc.postMessage(this.data); } catch (e) { } this.fire(); }
+  fire() { this.subs.forEach(s => { const v = JSON.stringify(this.read(s.p)); if (v !== s.last) { s.last = v; s.cb(this.read(s.p)); } }); }
+  // ---- access rules (mirror of database.rules.json) ----
+  allowed(p, v) {
+    const k = this.split(p); if (k[0] !== 'sessions' || !k[1]) return false;
+    const sid = k[1], host = this.read(`sessions/${sid}/meta/hostUid`), isHost = host === this.uid, part = k[2];
+    if (part === 'meta') return !host || isHost;
+    if (['state', 'public', 'scores', 'adjust', 'audit', 'results'].includes(part)) return isHost;
+    if (part === 'names') return k.length === 4 && this.read(p) == null && v === this.uid;
+    if (part === 'teams' || part === 'reflect') return !!host && k[3] === this.uid;
+    if (part === 'answers' || part === 'history') {
+      if (k[3] !== this.uid) return false;
+      const st = this.read(`sessions/${sid}/state`) || {};
+      const open = st.rounds?.[k[4]]?.status === 'open' || st.allowRevisions === true;
+      if (part === 'history') return open && this.read(p) == null;
+      return open;
+    }
+    return false;
+  }
+  deny(p) { const e = new Error('PERMISSION_DENIED: ' + p); e.code = 'PERMISSION_DENIED'; return Promise.reject(e); }
+  async get(p) { return JSON.parse(JSON.stringify(this.read(p))); }
+  set(p, v) { if (!this.allowed(p, v)) return this.deny(p); this.write(p, v); this.commit(); return Promise.resolve(); }
+  update(p, o) { for (const [k, v] of Object.entries(o)) if (!this.allowed(p + '/' + k, v)) return this.deny(p + '/' + k); for (const [k, v] of Object.entries(o)) this.write(p + '/' + k, v); this.commit(); return Promise.resolve(); }
+  async push(p, v) { const key = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); await this.set(p + '/' + key, v); return key; }
+  on(p, cb) { const s = { p, cb, last: JSON.stringify(this.read(p)) }; this.subs.push(s); setTimeout(() => cb(this.read(p)), 0); return () => { this.subs = this.subs.filter(x => x !== s); }; }
+  async claim(p, v) { if (this.read(p) != null) return false; await this.set(p, v); return true; }
+  reset() { this.data = {}; this.commit(); }
+}
+
+// Answer-key decryption (AES-GCM, PBKDF2-SHA256). Wrong passphrase → throws.
+async function unlockKey(pass) {
+  const b = s => Uint8Array.from(atob(s), c => c.charCodeAt(0)), enc = new TextEncoder();
+  const base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b(KEY_ENC.salt), iterations: KEY_ENC.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b(KEY_ENC.iv) }, key, b(KEY_ENC.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+/* Hand-built SVG charts (reused from BatchShift). Colors come from CSS tokens. */
+function ticks(lo, hi, n = 4) {
+  const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0))), f = step0 / mag;
+  const step = (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag; const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+  return { t: out, d: Math.max(0, -Math.floor(Math.log10(step))) };
+}
+function lineChart(o) {
+  const W = 640, H = o.h || 200, ml = 50, mr = 14, mt = o.title ? 26 : 10, mb = 28;
+  const vals = o.series.flatMap(s => s.vals).concat((o.hl || []).map(h => h.y)).filter(v => v != null && isFinite(v));
+  if (!vals.length) return '<p class="muted small">No data.</p>';
+  let lo = o.yMin ?? Math.min(...vals), hi = o.yMax ?? Math.max(...vals);
+  if (hi - lo < 1e-9) { hi += 1; lo -= 1; } const pad = (hi - lo) * 0.1; if (o.yMin == null) lo -= pad; if (o.yMax == null) hi += pad;
+  const n = o.xs.length, X = i => ml + (n <= 1 ? 0.5 : i / (n - 1)) * (W - ml - mr), Y = v => mt + (1 - (v - lo) / (hi - lo)) * (H - mt - mb);
+  const tk = ticks(lo, hi, 4); let g = '';
+  if (o.title) g += `<text class="ttl" x="${ml}" y="16">${esc(o.title)}</text>`;
+  if (o.band) g += `<rect x="${X(o.band[0])}" y="${mt}" width="${Math.max(0, X(o.band[1]) - X(o.band[0]))}" height="${H - mt - mb}" fill="var(--glow)"/>`;
+  tk.t.forEach(t => { g += `<line class="gl" x1="${ml}" x2="${W - mr}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${t.toFixed(tk.d)}</text>`; });
+  const every = Math.ceil(n / 12);
+  o.xs.forEach((x, i) => { if (i % every === 0 || i === n - 1) g += `<text x="${X(i)}" y="${H - 10}" text-anchor="middle">${esc(x)}</text>`; });
+  (o.hl || []).forEach(h => { g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(h.y)}" y2="${Y(h.y)}" stroke="${h.color || 'var(--muted)'}" stroke-dasharray="${h.dash || '4 4'}" stroke-width="1.2"/><text x="${W - mr}" y="${Y(h.y) - 4}" text-anchor="end" style="fill:${h.color || 'var(--muted)'}">${esc(h.label || '')}</text>`; });
+  o.series.forEach(s => {
+    const pts = s.vals.map((v, i) => v == null ? null : [X(i), Y(v)]);
+    let d = '', pen = false; pts.forEach(p => { if (!p) { pen = false; return; } d += (pen ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); pen = true; });
+    if (s.area) { const fp = pts.filter(Boolean); if (fp.length) g += `<path d="${d}L${fp[fp.length - 1][0]} ${H - mb}L${fp[0][0]} ${H - mb}Z" fill="${s.color}" opacity=".10"/>`; }
+    g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''}/>`;
+    pts.forEach((p, i) => { if (!p) return; const pc = o.pointColor ? o.pointColor(i, s.vals[i], s) : null; const last = i === pts.length - 1;
+      g += `<circle cx="${p[0]}" cy="${p[1]}" r="${pc ? 4.5 : last ? 4 : 2.6}" fill="${pc || s.color}"><title>${esc(s.name)} · ${esc(o.xLabel || 'Batch')} ${esc(o.xs[i])}: ${fmt(s.vals[i], s.d ?? 3)} ${esc(s.unit || '')}</title></circle>`; });
+  });
+  g += `<line class="ax" x1="${ml}" x2="${W - mr}" y1="${H - mb}" y2="${H - mb}"/>`;
+  if (o.yLab) g += `<text x="12" y="${mt + (H - mt - mb) / 2}" transform="rotate(-90 12 ${mt + (H - mt - mb) / 2})" text-anchor="middle">${esc(o.yLab)}</text>`;
+  const leg = o.series.length > 1 || o.legend ? `<div class="legend">${o.series.map(s => `<span style="--lc:${s.color}">${esc(s.name)}</span>`).join('')}${(o.hl || []).filter(h => h.leg).map(h => `<span style="--lc:${h.color}">${esc(h.leg)}</span>`).join('')}</div>` : '';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title || 'chart')}">${g}</svg>${leg}`;
+}
+function barChart(o) {
+  const W = o.w || 320, H = o.h || 190, ml = 46, mr = 8, mt = o.title ? 26 : 10, mb = 34;
+  const vals = o.groups.flatMap(g => g.vals).filter(isFinite); let hi = Math.max(0, ...vals) * 1.15 || 1, lo = Math.min(0, ...vals) * 1.15;
+  if (o.yMax != null) hi = o.yMax;
+  const Y = v => mt + (1 - (v - lo) / (hi - lo)) * (H - mt - mb), cw = (W - ml - mr) / o.cats.length, bw = Math.min(46, (cw - 14) / o.groups.length);
+  const tk = ticks(lo, hi, 4); let g = o.title ? `<text class="ttl" x="${ml}" y="16">${esc(o.title)}</text>` : '';
+  tk.t.forEach(t => { g += `<line class="gl" x1="${ml}" x2="${W - mr}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${t.toFixed(tk.d)}</text>`; });
+  o.cats.forEach((c, i) => {
+    const x0 = ml + i * cw + (cw - bw * o.groups.length) / 2;
+    o.groups.forEach((gr, j) => { const v = gr.vals[i]; if (!isFinite(v)) return; const y = Y(Math.max(v, 0)), h = Math.abs(Y(v) - Y(0));
+      g += `<rect x="${x0 + j * bw + 1}" y="${y}" width="${bw - 2}" height="${Math.max(1, h)}" fill="${gr.colors ? gr.colors[i] : gr.color}" rx="1"><title>${esc(gr.name)} · ${esc(c)}: ${o.fmt ? o.fmt(v) : fmt(v)}</title></rect>`;
+      if (o.labels !== false) g += `<text x="${x0 + j * bw + bw / 2}" y="${(v >= 0 ? y : y + h + 10) - 4}" text-anchor="middle" style="fill:var(--fg)">${o.fmt ? o.fmt(v) : fmt(v)}</text>`; });
+    g += `<text x="${ml + i * cw + cw / 2}" y="${H - 14}" text-anchor="middle">${esc(c)}</text>`;
+  });
+  (o.hl || []).forEach(h => { g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(h.y)}" y2="${Y(h.y)}" stroke="${h.color}" stroke-dasharray="4 4"/><text x="${W - mr}" y="${Y(h.y) - 4}" text-anchor="end" style="fill:${h.color}">${esc(h.label)}</text>`; });
+  g += `<line class="ax" x1="${ml}" x2="${W - mr}" y1="${Y(0)}" y2="${Y(0)}"/>`;
+  const leg = o.groups.length > 1 ? `<div class="legend">${o.groups.map(gr => `<span style="--lc:${gr.color}">${esc(gr.name)}</span>`).join('')}</div>` : '';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title || 'bar chart')}">${g}</svg>${leg}`;
+}
+function paretoChart(items, metric) {
+  const W = 640, H = 240, ml = 50, mr = 46, mt = 26, mb = 46; const tot = items.reduce((s, x) => s + x.v, 0) || 1, mx = Math.max(...items.map(x => x.v), 1e-9) * 1.15;
+  const cw = (W - ml - mr) / items.length, Y = v => mt + (1 - v / mx) * (H - mt - mb), Yp = p => mt + (1 - p) * (H - mt - mb);
+  let g = `<text class="ttl" x="${ml}" y="16">${esc(metric)}</text>`; const tk = ticks(0, mx, 4);
+  tk.t.forEach(t => { g += `<line class="gl" x1="${ml}" x2="${W - mr}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${t.toFixed(tk.d)}</text>`; });
+  [0, .5, .8, 1].forEach(p => g += `<text x="${W - mr + 6}" y="${Yp(p) + 4}">${p * 100}%</text>`);
+  g += `<line x1="${ml}" x2="${W - mr}" y1="${Yp(.8)}" y2="${Yp(.8)}" stroke="var(--alarm)" stroke-dasharray="3 5" opacity=".6"/>`;
+  let cum = 0, path = '';
+  items.forEach((it, i) => {
+    const x = ml + i * cw + cw * 0.18, w = cw * 0.64;
+    g += it.locked ? `<rect x="${x}" y="${mt}" width="${w}" height="${H - mt - mb}" fill="none" stroke="var(--line)" stroke-dasharray="4 4"/><text x="${x + w / 2}" y="${mt + 40}" text-anchor="middle">not measured</text>`
+      : `<rect x="${x}" y="${Y(it.v)}" width="${w}" height="${Y(0) - Y(it.v)}" fill="var(--accent)"><title>${esc(it.name)}: ${fmt(it.v, it.d ?? 3)}</title></rect><text x="${x + w / 2}" y="${Y(it.v) - 5}" text-anchor="middle" style="fill:var(--fg)">${fmt(it.v, it.d ?? 3)}</text>`;
+    cum += it.v; const px = ml + i * cw + cw / 2, py = Yp(cum / tot); path += (i ? 'L' : 'M') + px + ' ' + py;
+    g += `<text x="${px}" y="${H - mb + 14}" text-anchor="middle">${esc(it.name.split(' ')[0])}</text><text x="${px}" y="${H - mb + 27}" text-anchor="middle">${esc(it.name.split(' ').slice(1).join(' '))}</text>`;
+  });
+  g += `<path d="${path}" fill="none" stroke="var(--alarm)" stroke-width="2"/>`;
+  items.forEach((it, i) => { cum = items.slice(0, i + 1).reduce((s, x) => s + x.v, 0); g += `<circle cx="${ml + i * cw + cw / 2}" cy="${Yp(cum / tot)}" r="3.5" fill="var(--alarm)"><title>Cumulative ${(100 * cum / tot).toFixed(0)}%</title></circle>`; });
+  g += `<line class="ax" x1="${ml}" x2="${W - mr}" y1="${Y(0)}" y2="${Y(0)}"/>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pareto chart">${g}</svg><div class="legend"><span style="--lc:var(--accent)">${esc(metric)}</span><span style="--lc:var(--alarm)">Cumulative share</span></div>`;
+}
+
+/* ===================== CASE 014 APP: core ===================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (x, d = 2) => (x == null || !isFinite(x)) ? '—' : Number(x).toFixed(d);
+const pct = (x, d = 1) => (x == null || !isFinite(x)) ? '—' : (x >= 0 ? '+' : '−') + Math.abs(100 * x).toFixed(d) + '%';
+const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+const ROUNDS = ['r1', 'r2', 'r3', 'r4'];
+const ICONS = ['🔬', '🧬', '🧪', '🕵️', '🦠', '⚗️', '🔎', '🧫', '📊', '🛰️', '🐙', '🦉'];
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { } } };
+const normName = n => n.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+
+let DB = null;          // backend instance
+const G = {             // app state (not persisted except identity hints)
+  role: 'home', sid: null, view: {}, state: null, pub: null, meta: null, me: null, myAns: {}, myRes: null, myReflect: null,
+  host: { K: null, teams: {}, answers: {}, history: {}, adjust: {}, reflect: {}, audit: {}, scores: {}, insp: { r: 'r1', q: 'lead' }, autoClose: true },
+  draft: {}, dirty: {}, unsub: [], err: null, toastT: null
+};
+
+function toast(m, bad) { let o = $('#toast'); if (!o) { o = document.createElement('div'); o.id = 'toast'; o.setAttribute('role', 'status'); document.body.appendChild(o); } o.className = 'toast' + (bad ? ' bad' : ''); o.textContent = m; o.hidden = false; clearTimeout(G.toastT); G.toastT = setTimeout(() => o.hidden = true, 2800); }
+function download(name, text, type = 'text/plain') { const b = new Blob([text], { type }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+function copy(text) { (navigator.clipboard?.writeText(text) || Promise.reject()).then(() => toast('Copied'), () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); toast('Copied'); } catch (e) { toast('Copy failed: select the text manually', true); } t.remove(); }); }
+const csv = rows => rows.map(r => r.map(x => { const s = String(x ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
+
+// ---------- config & routing ----------
+function parseHash() { const h = new URLSearchParams(location.hash.slice(1)); return { s: (h.get('s') || '').toUpperCase(), c: h.get('c'), host: h.has('host'), board: (h.get('board') || '').toUpperCase() }; }
+function cfgFromText(t) {
+  if (!t) return null;
+  const m = t.match(/\{[\s\S]*\}/); if (!m) return null;
+  let o; try { o = JSON.parse(m[0]); } catch (e) { try { o = JSON.parse(m[0].replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g, '$1"$2":').replace(/'/g, '"').replace(/,\s*}/g, '}')); } catch (e2) { return null; } }
+  return o.apiKey && o.databaseURL && o.projectId ? { apiKey: o.apiKey, authDomain: o.authDomain, databaseURL: o.databaseURL, projectId: o.projectId, appId: o.appId } : null;
+}
+const encCfg = c => btoa(JSON.stringify(c)).replace(/=+$/, '');
+const decCfg = s => { try { return JSON.parse(atob(s)); } catch (e) { return null; } };
+function currentCfg() { const h = parseHash(); return (h.c && decCfg(h.c)) || decCfg(LS.get('case014-fbcfg') || '') || null; }
+function joinURL(sid) { const c = currentCfg(); return location.origin + location.pathname + '#s=' + sid + (c ? '&c=' + encCfg(c) : ''); }
+
+async function connect() {
+  const cfg = currentCfg();
+  try { DB = cfg ? await new FirebaseDB(cfg).init() : await new DemoDB().init(); }
+  catch (e) { console.error(e); G.err = `Could not connect to the live database (${e.message}). Check the Firebase setup, or remove the saved config to use demo mode.`; DB = await new DemoDB().init(); }
+}
+function clearSubs() { G.unsub.forEach(f => { try { f(); } catch (e) { } }); G.unsub = []; }
+const P = (...k) => ['sessions', G.sid, ...k].join('/');
+
+// ---------- time ----------
+function remaining(rs) { if (!rs) return null; if (rs.status === 'paused') return rs.remaining; if (rs.status !== 'open' || !rs.endsAt) return null; return rs.endsAt - DB.now(); }
+function phaseRound() { const ph = G.state?.phase; return ROUNDS.includes(ph) ? ph : null; }
+function roundOpen(r) { const st = G.state; return st?.rounds?.[r]?.status === 'open' || st?.allowRevisions === true; }
+function phaseLabel(ph) { return ph === 'lobby' ? 'Lobby' : ph === 'ended' ? 'Case closed' : ROUNDS.includes(ph) ? `Round ${ph[1]} · ${Q.rounds[ph].name}` : 'Not started'; }
+
+// ---------- answer formatting ----------
+function prettyAns(q, v) {
+  if (v == null) return '';
+  const qq = Q.byId[q];
+  if (qq.kind === 'suspect') { const n = id => CASE.SUSPECTS.find(s => s.id === id)?.name || id; return typeof v === 'object' ? `Lead: ${n(v.lead)}${v.sel ? ' · selected: ' + v.sel.map(n).join(', ') : ''}${v.conf ? ' · confidence ' + v.conf + '/5' : ''}` : n(v); }
+  if (qq.kind === 'choice') return qq.opts[v] || v;
+  if (qq.kind === 'multi') return (v || []).map(x => qq.opts[x] || x).join(', ') || 'none';
+  if (qq.kind === 'scale') return v + ' / 5';
+  if (qq.kind === 'fishbone') return Object.entries(v).map(([k, c]) => `${qq.items[k]} → ${c}`).join('; ');
+  if (qq.kind === 'interventions') { const o = CASE.outcome(v.ids); return (v.ids.map(id => CASE.IVS.find(x => x.id === id)?.name).join(' + ') || 'none') + ` (cost ${o.cost}, yield ${fmt(o.Ym, 3)} g/L, activity ${fmt(o.SAm, 1)})`; }
+  return JSON.stringify(v);
+}
+
+// ---------- boot ----------
+async function boot() {
+  await connect();
+  const h = parseHash();
+  if (h.c && decCfg(h.c)) LS.set('case014-fbcfg', h.c);
+  if (h.board) { G.role = 'board'; await openSession(h.board, 'board'); }
+  else if (h.host) { G.role = 'hostSetup'; const last = LS.get('case014-host-sid'); if (last) G.view.resume = last; }
+  else {
+    G.view.code = h.s || LS.get('case014-team-sid') || '';
+    if (G.view.code) { const t = await DB.get(`sessions/${G.view.code}/teams/${DB.uid}`).catch(() => null); if (t) { await openSession(G.view.code, 'team'); } else { await peek(G.view.code); } }
+  }
+  render();
+  setInterval(tick, 500);
+}
+// read-only look at a session for the home page (timer + leaderboard preview)
+async function peek(code) {
+  clearSubs(); G.sid = code; G.meta = await DB.get(`sessions/${code}/meta`).catch(() => null);
+  if (!G.meta) { G.sid = null; G.state = G.pub = null; return false; }
+  G.unsub.push(DB.on(P('state'), v => { G.state = v; render(); }), DB.on(P('public'), v => { G.pub = v; render(); }));
+  return true;
+}
+async function openSession(code, role) {
+  clearSubs(); G.sid = code; G.role = role;
+  G.meta = await DB.get(P('meta')).catch(() => null);
+  if (!G.meta) { G.err = `No session found with code ${code}.`; G.role = role === 'board' ? 'board' : 'home'; G.sid = null; return; }
+  G.unsub.push(DB.on(P('state'), v => { G.state = v; render(); }), DB.on(P('public'), v => { G.pub = v; render(); }));
+  if (role === 'team') {
+    LS.set('case014-team-sid', code);
+    G.unsub.push(DB.on(P('teams', DB.uid), v => { G.me = v; render(); }), DB.on(P('answers', DB.uid), v => { G.myAns = v || {}; render(); }),
+      DB.on(P('results', DB.uid), v => { G.myRes = v; render(); }), DB.on(P('reflect', DB.uid), v => { G.myReflect = v; render(); }));
+  }
+  if (role === 'host') hostSubscribe();
+}
+
+// ---------- render + timer ----------
+let rendering = false, queued = false;
+function render() {
+  if (rendering) { if (!queued) { queued = true; queueMicrotask(() => { queued = false; render(); }); } return; }
+  rendering = true;
+  try {
+    const keep = document.activeElement && document.activeElement.id && document.activeElement.matches('input[type=text],textarea,input[type=number]') ? { id: document.activeElement.id, s: document.activeElement.selectionStart, e: document.activeElement.selectionEnd } : null;
+    const views = { home: viewHome, team: viewTeam, hostSetup: viewHostSetup, host: viewHost, board: viewBoard };
+    $('#app').innerHTML = banner() + (views[G.role] || viewHome)();
+    for (const [id, val] of Object.entries(G.dirty)) { const el = document.getElementById(id); if (el && el.value !== val && !el.disabled) el.value = val; }
+    if (keep) { const el = document.getElementById(keep.id); if (el) { el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch (e) { } } }
+    afterRender();
+  } catch (e) { console.error(e); $('#app').innerHTML = `<div class="wrap"><div class="note bad">Display error: ${esc(e.message)}. Reload the page; your submitted answers are saved.</div></div>`; }
+  finally { rendering = false; }
+}
+function banner() {
+  const live = DB?.mode === 'live';
+  return `<div class="modebar ${live ? 'live' : 'demo'}" role="note">${live ? '● LIVE · shared session across devices' : '◆ DEMO MODE · this device only (tabs of this browser share data). Not real class submissions.'}${G.err ? ` <span class="err">${esc(G.err)}</span>` : ''}</div>`;
+}
+function tick() {
+  $$('[data-timer]').forEach(el => { const rs = G.state?.rounds?.[el.dataset.timer]; const ms = remaining(rs); el.textContent = ms == null ? (rs?.status === 'closed' ? 'closed' : '--:--') : mmss(ms); el.classList.toggle('urgent', ms != null && ms < 30000); el.classList.toggle('over', ms != null && ms <= 0 && rs?.status === 'open'); });
+  if (G.role === 'host') hostTick();
+}
+function afterRender() { if (G.role === 'host' || (G.role === 'board')) drawQR(); if (G.role === 'board' && G.state?.phase === 'ended' && G.pub?.leaderboard?.finalized) confetti(); }
+
+// ---------- QR (qrcode-generator from CDN; falls back to the text link) ----------
+let qrLoading = null;
+function drawQR() {
+  const el = $('#qr'); if (!el || !G.sid) return;
+  const url = joinURL(G.sid);
+  if (el.dataset.url === url && el.firstChild) return;
+  const paint = () => { try { const q = qrcode(0, 'M'); q.addData(url); q.make(); el.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); el.dataset.url = url; } catch (e) { el.textContent = 'QR unavailable'; } };
+  if (window.qrcode) paint();
+  else { qrLoading = qrLoading || loadScript('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'); qrLoading.then(paint, () => { el.innerHTML = '<span class="tiny">QR library could not load. Share the link below instead.</span>'; }); }
+}
+let confettiDone = false;
+function confetti() {
+  if (confettiDone || matchMedia('(prefers-reduced-motion: reduce)').matches) return; confettiDone = true;
+  const c = document.createElement('canvas'); c.className = 'confetti'; document.body.appendChild(c); const x = c.getContext('2d');
+  c.width = innerWidth; c.height = innerHeight; const cols = ['#3fd0e0', '#f2b13c', '#ef5a4c', '#8de07a', '#f4f1e8'];
+  const ps = Array.from({ length: 160 }, () => ({ x: Math.random() * c.width, y: -20 - Math.random() * c.height, v: 2 + Math.random() * 4, w: 4 + Math.random() * 6, a: Math.random() * 6, c: cols[Math.floor(Math.random() * 5)] }));
+  let t = 0; (function f() { x.clearRect(0, 0, c.width, c.height); ps.forEach(p => { p.y += p.v; p.a += 0.1; x.fillStyle = p.c; x.save(); x.translate(p.x + Math.sin(p.a) * 8, p.y); x.rotate(p.a); x.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2); x.restore(); }); if (++t < 260) requestAnimationFrame(f); else c.remove(); })();
+}
+
+/* ===================== CASE 014 APP: home + team views ===================== */
+function incidentBoard(big) {
+  const C = ENGINE.C;
+  return `<section class="incident ${big ? 'big' : ''}" aria-label="Case 014 incident board">
+   <div class="inc-head"><span class="stamp">CASE 014</span><span class="label alarm"><i class="beacon">●</i> THE MISSING YIELD</span></div>
+   <h1>Who stole the 14%?</h1>
+   <div class="meter-wrap" aria-label="Yield fell from 5.0 to 4.3 grams per litre">
+    <div class="ymeter"><div class="yfill"><span>current ${fmt(C.Ycur, 1)} g/L</span></div><div class="ygone"><span>14% missing</span></div></div>
+    <div class="ylabels num"><span>0 g/L</span><span>baseline ${fmt(C.Y0, 1)} g/L</span></div>
+   </div>
+   <div class="calc num">(${fmt(C.Y0, 1)} − ${fmt(C.Ycur, 1)}) / ${fmt(C.Y0, 1)} × 100 = <b>${fmt(100 * (C.Y0 - C.Ycur) / C.Y0, 0)}%</b></div>
+   <p class="tiny muted">NovaBio Enzymatics is fictional. All values are educational scenario data.</p></section>`;
+}
+function lbTable(lb, opts = {}) {
+  if (!lb || !lb.rows || !lb.rows.length) return `<p class="muted small">${lb?.mode === 'hidden' ? 'Scores are hidden until the facilitator releases them.' : 'No scores yet.'}</p>`;
+  const rows = opts.limit ? lb.rows.slice(0, opts.limit) : lb.rows;
+  return `<div class="scroll"><table class="lb"><thead><tr><th>#</th><th>Team</th><th class="n">Total</th>${opts.compact ? '' : '<th class="n">R1</th><th class="n">R2</th><th class="n">R3</th><th class="n">R4</th><th class="n">Correct</th><th class="n">Evidence reasoning</th><th class="n">Intervention</th><th>Status</th>'}</tr></thead><tbody>
+   ${rows.map(r => `<tr class="${r.rank === 1 ? 'first' : ''}"><td class="n">${r.rank}</td><td><span class="ico">${esc(r.icon)}</span> ${esc(r.name)}</td><td class="n"><b>${fmt(r.total, 1)}</b></td>${opts.compact ? '' : `<td class="n">${fmt(r.r1, 1)}</td><td class="n">${fmt(r.r2, 1)}</td><td class="n">${fmt(r.r3, 1)}</td><td class="n">${fmt(r.r4, 1)}</td><td class="n">${r.correct}</td><td class="n">${fmt(r.reasoning, 1)}</td><td class="n">${fmt(r.intervention, 1)}</td><td>${esc(r.status)}</td>`}</tr>`).join('')}</tbody></table></div>
+   <p class="tiny muted">${lb.finalized ? 'Final scores.' : 'Provisional scores: free-text answers may still be reviewed.'}${lb.mode === 'anon' ? ' Team names hidden during grading.' : ''} Ties: Round 3 reasoning, then Round 2 analysis; otherwise shared rank.</p>`;
+}
+
+// ---------- Home ----------
+function viewHome() {
+  const v = G.view, st = G.state, ph = st?.phase, r = phaseRound();
+  return `<div class="wrap home">
+   <div class="home-grid">
+    <div class="stack">${incidentBoard(true)}
+</div>
+    <div class="stack">
+     <form class="panel stack" id="joinForm" autocomplete="off" novalidate>
+      <h2>Start investigation</h2>
+      <label class="field"><span class="label">Session code</span><input type="text" id="j_code" maxlength="6" value="${esc(v.code || '')}" placeholder="e.g. K7QM2A" style="text-transform:uppercase" inputmode="latin" required></label>
+      <label class="field"><span class="label">Team name</span><input type="text" id="j_name" maxlength="28" value="${esc(v.name || '')}" required></label>
+      <label class="field"><span class="label">Members (optional)</span><input type="text" id="j_members" maxlength="120" value="${esc(v.members || '')}" placeholder="First names or initials"></label>
+      <fieldset class="field"><legend class="label">Team icon</legend><div class="icons">${ICONS.map((i, n) => `<label class="iconpick"><input type="radio" name="j_icon" value="${i}" ${(v.icon || ICONS[0]) === i ? 'checked' : ''}><span>${i}</span></label>`).join('')}</div></fieldset>
+      <button class="btn primary big" type="submit" id="joinBtn">Join the investigation</button>
+      ${v.joinErr ? `<div class="note bad small" role="alert">${esc(v.joinErr)}</div>` : ''}
+     </form>
+     <ol class="howto" aria-label="How the game works">
+      <li><b>Join</b><span>Enter the session code with one device per team.</span></li>
+      <li><b>Investigate</b><span>Four rounds: suspects, evidence stations, accusation, rescue.</span></li>
+      <li><b>Prove it</b><span>Points reward evidence and reasoning, not speed or lucky guesses.</span></li></ol>
+     <div class="panel stack"><div class="row sb"><h3>Session clock</h3><span class="chip">${G.sid ? esc(G.sid) : 'no code yet'}</span></div>
+      ${G.sid ? `<div class="clock num" ${r ? `data-timer="${r}"` : ''}>${r ? '' : '--:--'}</div><p class="small muted">${esc(phaseLabel(ph))}</p>` : '<p class="small muted">Enter a session code to see the countdown.</p>'}</div>
+     <div class="panel stack"><h3>Leaderboard preview</h3>${G.sid ? lbTable(G.pub?.leaderboard, { compact: true, limit: 5 }) : '<p class="small muted">Appears once you enter a session code.</p>'}</div>
+     <a class="btn ghost" href="#host" data-act="goHost">Facilitator entry</a>
+    </div></div></div>`;
+}
+async function doJoin() {
+  const code = $('#j_code').value.trim().toUpperCase(), name = $('#j_name').value.trim(), members = $('#j_members').value.trim(), icon = ($('input[name=j_icon]:checked') || {}).value || ICONS[0];
+  Object.assign(G.view, { code, name, members, icon, joinErr: null });
+  if (!/^[A-Z0-9]{6}$/.test(code)) { G.view.joinErr = 'Session codes have 6 letters or numbers. Check the code on the projector.'; return render(); }
+  if (name.length < 2) { G.view.joinErr = 'Enter a team name of at least 2 characters.'; return render(); }
+  const meta = await DB.get(`sessions/${code}/meta`).catch(() => null);
+  if (!meta) { G.view.joinErr = `No session with code ${code}. Check the code on the projector.`; return render(); }
+  const existing = await DB.get(`sessions/${code}/teams/${DB.uid}`).catch(() => null);
+  if (existing) { await openSession(code, 'team'); toast(`Welcome back, ${existing.name}`); return render(); }
+  const n = normName(name); if (!n) { G.view.joinErr = 'Use letters or numbers in the team name.'; return render(); }
+  const ok = await DB.claim(`sessions/${code}/names/${n}`, DB.uid).catch(() => false);
+  if (!ok) { const owner = await DB.get(`sessions/${code}/names/${n}`).catch(() => null); if (owner !== DB.uid) { G.view.joinErr = `The name "${name}" is already taken in this session. Choose another.`; return render(); } }
+  try { await DB.set(`sessions/${code}/teams/${DB.uid}`, { name, members, icon, joinedAt: DB.now() }); }
+  catch (e) { G.view.joinErr = 'Could not join: ' + e.message; return render(); }
+  await openSession(code, 'team'); toast(`Joined as ${name}`); render();
+}
+
+// ---------- Team ----------
+function viewTeam() {
+  const me = G.me, st = G.state || {}, ph = st.phase || 'lobby', r = phaseRound();
+  if (!me) return `<div class="wrap"><p class="muted">Loading your team…</p></div>`;
+  let body;
+  if (ph === 'lobby' || !st.phase) body = `<div class="panel stack center"><h2>You’re in, ${esc(me.name)} ${esc(me.icon)}</h2><p>Wait for the facilitator to open Round 1. Agree as a team: one device, one answer per question.</p>${incidentBoard(false)}</div>`;
+  else if (ph === 'ended') body = viewEnded();
+  else body = viewRound(r);
+  const prev = ROUNDS.filter(x => G.state?.rounds?.[x]?.status === 'closed' && x !== r);
+  return `<div class="wrap team">
+   <header class="teambar"><div class="tb-l"><span class="ico big">${esc(me.icon)}</span><div><b>${esc(me.name)}</b><div class="tiny muted">Session ${esc(G.sid)}${me.members ? ' · ' + esc(me.members) : ''}</div></div></div>
+    <div class="tb-r"><span class="label">${esc(phaseLabel(ph))}</span>${r ? `<span class="clock sm num" data-timer="${r}"></span>` : ''}</div></header>
+   ${roundStrip()}
+   ${body}
+   ${prev.length && ph !== 'ended' ? `<details class="panel"><summary>Debrief from earlier rounds</summary>${prev.map(debriefCard).join('')}</details>` : ''}</div>`;
+}
+function roundStrip() {
+  return `<ol class="rstrip">${ROUNDS.map(x => { const s = G.state?.rounds?.[x]?.status || 'pending'; return `<li class="${s} ${G.state?.phase === x ? 'now' : ''}"><b>R${x[1]}</b><span>${Q.rounds[x].name}</span><i>${Q.rounds[x].dmaic}</i></li>`; }).join('')}</ol>`;
+}
+function ans(r, q) { return G.myAns?.[r]?.[q]; }
+function statusChip(r, qs) {
+  const done = qs.filter(q => ans(r, q)).length, rs = G.state?.rounds?.[r];
+  const late = qs.some(q => ans(r, q)?.late);
+  return done === qs.length ? `<span class="chip good">Submitted${late ? ' (late)' : ''}</span>` : done ? `<span class="chip warn">${done}/${qs.length} submitted</span>` : `<span class="chip">${rs?.status === 'closed' ? 'Not submitted' : 'Pending'}</span>`;
+}
+function lockedNote(r) {
+  const rs = G.state?.rounds?.[r];
+  if (roundOpen(r)) { const ms = remaining(rs); return ms != null && ms <= 0 ? '<div class="note warn small">Time is up. You can still submit until the facilitator closes the round, but it will be marked late.</div>' : ''; }
+  return `<div class="note small">${rs?.status === 'paused' ? 'The facilitator has paused the round.' : 'This round is closed. Answers are locked.'}</div>`;
+}
+function viewRound(r) {
+  const rs = G.state?.rounds?.[r] || {};
+  if (rs.status === 'closed') return debriefCard(r) + (r === 'r4' ? '' : '<p class="muted small center">Waiting for the next round.</p>');
+  const head = `<div class="roundhead"><div><span class="label">Round ${r[1]} · ${Q.rounds[r].dmaic} · ${Q.rounds[r].max} points</span><h2>${Q.rounds[r].name}</h2></div>${statusChip(r, Q.inRound(r).map(q => q.id))}</div>`;
+  return head + lockedNote(r) + ({ r1: viewR1, r2: viewR2, r3: viewR3, r4: viewR4 }[r])();
+}
+function dval(r, q, fallback) { const k = r + '.' + q; return G.draft[k] !== undefined ? G.draft[k] : (ans(r, q)?.v ?? fallback); }
+function dtext(r, q) { const k = r + '.' + q + '.t'; return G.draft[k] !== undefined ? G.draft[k] : (ans(r, q)?.text ?? ''); }
+const dis = r => roundOpen(r) ? '' : 'disabled';
+function radios(r, q, opts) { const v = dval(r, q); return `<div class="opts">${Object.entries(opts).map(([k, t]) => `<label class="opt ${v === k ? 'on' : ''}"><input type="radio" name="${r}_${q}" value="${esc(k)}" data-draft="${r}.${q}" ${v === k ? 'checked' : ''} ${dis(r)}><span>${esc(t)}</span></label>`).join('')}</div>`; }
+function qBlock(qq, inner) { return `<div class="q"><div class="qhead"><b>${esc(qq.prompt)}</b><span class="pts">${qq.max} pts</span></div>${inner}</div>`; }
+function submitBar(r, qs, label) {
+  const last = qs.map(q => ans(r, q)).filter(Boolean).sort((a, b) => b.at - a.at)[0];
+  return `<div class="row submitbar"><button class="btn primary" data-act="submit" data-r="${r}" data-qs="${qs.join(',')}" ${dis(r)}>${label || 'Submit team answer'}</button>
+   ${last ? `<span class="small good">✓ Saved ${new Date(last.at).toLocaleTimeString()}${last.rev > 1 ? ` · revision ${last.rev}` : ''}. You can revise until the round closes; the latest answer counts.</span>` : '<span class="small muted">Not submitted yet.</span>'}</div>`;
+}
+
+// Round 1
+function viewR1() {
+  const v = dval('r1', 'lead', {}) || {}, sel = v.sel || [], open = G.view.inspect || {};
+  return `<div class="panel stack"><p>Six process suspects. Inspect each card, tick the ones you find suspicious, then pick your leading hypothesis.</p>
+   <div class="suspects">${CASE.SUSPECTS.map(s => `<div class="suspect ${sel.includes(s.id) ? 'sel' : ''} ${v.lead === s.id ? 'lead' : ''}">
+     <div class="row sb"><span class="sic">${s.icon}</span>${v.lead === s.id ? '<span class="chip warn">leading</span>' : ''}</div><b>${esc(s.name)}</b><p class="small">${esc(s.short)}</p>
+     ${open[s.id] ? `<p class="small inspect">${esc(s.more)}</p>` : ''}
+     <div class="row"><button class="btn sm" data-act="inspect" data-id="${s.id}" aria-expanded="${!!open[s.id]}">${open[s.id] ? 'Hide' : 'Inspect'}</button>
+      <label class="row small"><input type="checkbox" data-sel="${s.id}" ${sel.includes(s.id) ? 'checked' : ''} ${dis('r1')}> Suspicious</label>
+      <label class="row small"><input type="radio" name="r1lead" data-lead="${s.id}" ${v.lead === s.id ? 'checked' : ''} ${dis('r1')}> Leading</label></div></div>`).join('')}</div>
+   <div class="field"><span class="label">Team confidence in the leading suspect (1–5)</span><div class="scale">${[1, 2, 3, 4, 5].map(n => `<label class="opt ${v.conf === n ? 'on' : ''}"><input type="radio" name="r1conf" data-conf="${n}" ${v.conf === n ? 'checked' : ''} ${dis('r1')}><span>${n}</span></label>`).join('')}</div></div>
+   ${qBlock(Q.byId.why, radios('r1', 'why', Q.byId.why.opts) + `<label class="field"><span class="label">${esc(Q.byId.why.text)}</span><textarea id="t_r1_why" data-draftt="r1.why" maxlength="300" ${dis('r1')}>${esc(dtext('r1', 'why'))}</textarea></label>`)}
+   <p class="tiny muted">Scoring: 5 points for a factor the data supports (partial credit for a real minor contributor), 5 for the basis of your reasoning. A suspicious-looking factor is not automatically the cause.</p>
+   ${submitBar('r1', ['lead', 'why'])}</div>`;
+}
+
+// Round 2 stations
+function viewR2() {
+  const stn = G.view.station || 'A';
+  const tabs = [['A', 'Batch timeline'], ['B', 'Pareto puzzle'], ['C', 'Fishbone'], ['D', 'Red herring']];
+  const qsOf = s => Q.list.filter(q => q.st === s).map(q => q.id);
+  return `<div class="stations" role="tablist">${tabs.map(([k, n]) => `<button role="tab" class="stab ${k === stn ? 'on' : ''}" data-act="station" data-s="${k}" aria-selected="${k === stn}"><b>${k}</b> ${n} ${qsOf(k).every(q => ans('r2', q)) ? '✓' : ''}</button>`).join('')}</div>
+   <div class="panel stack">${({ A: stationA, B: stationB, C: stationC, D: stationD })[stn]()}${releasedEvidence()}
+   ${submitBar('r2', qsOf(stn), `Submit Station ${stn}`)}</div>`;
+}
+const R = () => CASE.rows;
+function stationA() {
+  const vars = { A: ['Inoculum age', 'h', 1, 'var(--c1)'], F: ['Feed-timing deviation', 'min', 1, 'var(--c2)'], D: ['DO excursion (probe)', 'min', 0, 'var(--c3)'], R: ['Recovery step yield', 'fraction', 3, 'var(--c4)'] };
+  const pick = G.view.aVar || 'A', sel = G.view.batch, rows = R(), xs = rows.map(r => r.id.slice(1));
+  const rec = sel ? rows.find(r => r.id === sel) : null;
+  return `<h3>Station A · The batch timeline</h3><p class="small">24 batches over six months. Click a batch to open its record. Compare process variables with final yield.</p>
+   <div class="timeline" role="list">${rows.map(r => `<button role="listitem" class="tbatch ${r.loss ? 'low' : ''} ${sel === r.id ? 'on' : ''}" data-act="batch" data-id="${r.id}" title="${r.id}" aria-label="${r.id}, yield ${fmt(r.Y, 2)} g/L"><span>${r.id.slice(2)}</span><i style="height:${Math.round(10 + (r.Y - 3.5) * 22)}px"></i></button>`).join('')}</div>
+   <div class="tiny muted">Bar height = final yield. Amber = below 4.6 g/L.</div>
+   ${rec ? `<div class="record"><b>${rec.id}</b> · ${rec.date} · ${rec.shift} shift<div class="kv num">
+     <span>Inoculum age</span><span>${fmt(rec.A, 1)} h</span><span>Feed-timing deviation</span><span>${fmt(rec.F, 1)} min</span><span>DO excursion (probe)</span><span>${fmt(rec.D, 0)} min</span>
+     <span>Recovery step yield</span><span>${fmt(rec.R, 3)}</span><span>Final yield</span><span>${fmt(rec.Y, 3)} g/L</span><span>Specific activity</span><span>${fmt(rec.SA, 1)} U/mg</span></div></div>` : '<div class="record muted small">No batch selected.</div>'}
+   <div class="row chips">${Object.entries(vars).map(([k, v]) => `<button class="chipbtn ${pick === k ? 'on' : ''}" data-act="aVar" data-k="${k}">${v[0]}</button>`).join('')}</div>
+   ${lineChart({ title: `${vars[pick][0]} (${vars[pick][1]})`, xs, series: [{ name: vars[pick][0], vals: rows.map(r => r[pick]), color: vars[pick][3], d: vars[pick][2], unit: vars[pick][1] }], h: 150, band: [0, 5] })}
+   ${lineChart({ title: 'Final yield (g/L)', xs, series: [{ name: 'Final yield', vals: rows.map(r => r.Y), color: 'var(--fg)', d: 3, unit: 'g/L' }], hl: [{ y: 5, label: 'baseline 5.0', color: 'var(--muted)' }, { y: 4.3, label: 'current 4.3', color: 'var(--red)' }], h: 150, band: [0, 5] })}
+   <p class="tiny muted">Shaded band: baseline batches B001–B006.</p>
+   ${qBlock(Q.byId.a1, radios('r2', 'a1', Q.byId.a1.opts))}${qBlock(Q.byId.a2, radios('r2', 'a2', Q.byId.a2.opts))}`;
+}
+function stationB() {
+  const items = CASE.PARETO.map(p => ({ name: p.cat, v: p.n, d: 0 }));
+  return `<h3>Station B · The Pareto puzzle</h3><p class="small">QA’s deviation log for all 24 batches. <b>Metric shown: number of batches with a logged deviation in each category (frequency).</b></p>
+   ${paretoChart(items, 'Logged deviations (count of batches, of 24)')}
+   <div class="scroll"><table><thead><tr><th>Category</th><th>Logged when</th><th class="n">Batches</th></tr></thead><tbody>${CASE.PARETO.map(p => `<tr><td>${esc(p.cat)}</td><td class="small">${esc(p.rule)}</td><td class="n">${p.n}</td></tr>`).join('')}</tbody></table></div>
+   ${qBlock(Q.byId.b1, radios('r2', 'b1', Q.byId.b1.opts))}${qBlock(Q.byId.b2, radios('r2', 'b2', Q.byId.b2.opts))}`;
+}
+function stationC() {
+  const q = Q.byId.c1, v = dval('r2', 'c1', {}) || {};
+  const box = c => `<div class="bone"><span class="label">${c}</span>${Object.entries(v).filter(([, x]) => x === c).map(([k]) => `<span class="cause">${esc(q.items[k])}</span>`).join('')}</div>`;
+  return `<h3>Station C · The fishbone challenge</h3><p class="small">Place each cause in the category where it belongs. Some causes can be justified in more than one category.</p>
+   <div class="fish"><div class="bones">${q.cats.slice(0, 3).map(box).join('')}</div><div class="spine"><span>Yield −14%</span></div><div class="bones">${q.cats.slice(3).map(box).join('')}</div></div>
+   ${qBlock(q, `<div class="fishpick">${Object.entries(q.items).map(([k, t]) => `<label class="field"><span class="label">${esc(t)}</span><select data-fish="${k}" ${dis('r2')}><option value="">Choose a category</option>${q.cats.map(c => `<option ${v[k] === c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>`).join('')}</div>`)}`;
+}
+function stationD() {
+  const rows = R(), lo = G.view.dLo ?? 12, hi = G.view.dHi ?? 36;
+  const f = rows.filter(r => r.A >= lo && r.A <= hi), day = f.filter(r => r.shift === 'Day'), night = f.filter(r => r.shift === 'Night');
+  const m = a => a.length ? CASE.mean(a.map(r => r.Y)) : null;
+  return `<h3>Station D · Catch the red herring</h3>
+   <div class="note small">Supervisor’s claim: “The worst batches started on the night shift. Night shift average yield is ${fmt(CASE.stats.night, 2)} g/L vs ${fmt(CASE.stats.day, 2)} g/L on days.”</div>
+   ${shiftScatter(rows)}
+   <div class="panel flat stack"><b class="small">Compare like with like: filter by inoculum age</b>
+    <div class="row"><label class="field"><span class="label">From (h)</span><input type="number" id="dLo" min="12" max="36" step="0.5" value="${lo}" data-view="dLo"></label><label class="field"><span class="label">To (h)</span><input type="number" id="dHi" min="12" max="36" step="0.5" value="${hi}" data-view="dHi"></label></div>
+    <div class="grid2 small"><div><span class="label">Day batches in range</span><div class="num big2">${m(day) == null ? '—' : fmt(m(day), 2)}</div><span class="muted">${day.length} batches · mean seed age ${day.length ? fmt(CASE.mean(day.map(r => r.A)), 1) : '—'} h · mean feed dev ${day.length ? fmt(CASE.mean(day.map(r => r.F)), 1) : '—'} min</span></div>
+     <div><span class="label">Night batches in range</span><div class="num big2">${m(night) == null ? '—' : fmt(m(night), 2)}</div><span class="muted">${night.length} batches · mean seed age ${night.length ? fmt(CASE.mean(night.map(r => r.A)), 1) : '—'} h · mean feed dev ${night.length ? fmt(CASE.mean(night.map(r => r.F)), 1) : '—'} min</span></div></div>
+    <div class="scroll"><table><thead><tr><th>Batch</th><th>Shift</th><th class="n">Seed age (h)</th><th class="n">Feed dev (min)</th><th class="n">Yield (g/L)</th></tr></thead><tbody>${f.map(r => `<tr><td>${r.id}</td><td>${r.shift}</td><td class="n">${fmt(r.A, 1)}</td><td class="n">${fmt(r.F, 1)}</td><td class="n">${fmt(r.Y, 3)}</td></tr>`).join('')}</tbody></table></div></div>
+   ${qBlock(Q.byId.d1, radios('r2', 'd1', Q.byId.d1.opts))}${qBlock(Q.byId.d2, radios('r2', 'd2', Q.byId.d2.opts))}${qBlock(Q.byId.d3, radios('r2', 'd3', Q.byId.d3.opts))}`;
+}
+function shiftScatter(rows) {
+  const W = 640, H = 240, ml = 50, mr = 12, mt = 14, mb = 36, X = a => ml + (a - 16) / (35 - 16) * (W - ml - mr), Y = y => mt + (1 - (y - 3.5) / (5.4 - 3.5)) * (H - mt - mb);
+  let g = ''; [3.5, 4, 4.5, 5].forEach(t => g += `<line class="gl" x1="${ml}" x2="${W - mr}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${t.toFixed(1)}</text>`);
+  [18, 22, 26, 30, 34].forEach(t => g += `<text x="${X(t)}" y="${H - 18}" text-anchor="middle">${t}</text>`);
+  rows.forEach(r => { g += r.shift === 'Night' ? `<rect x="${X(r.A) - 5}" y="${Y(r.Y) - 5}" width="10" height="10" fill="var(--violet)"><title>${r.id} night: ${fmt(r.A, 1)} h, ${fmt(r.Y, 2)} g/L</title></rect>` : `<circle cx="${X(r.A)}" cy="${Y(r.Y)}" r="5.5" fill="var(--c2)"><title>${r.id} day: ${fmt(r.A, 1)} h, ${fmt(r.Y, 2)} g/L</title></circle>`; });
+  g += `<text x="${(W + ml) / 2}" y="${H - 2}" text-anchor="middle">Inoculum age at transfer (h)</text><text x="12" y="${H / 2}" transform="rotate(-90 12 ${H / 2})" text-anchor="middle">Final yield (g/L)</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Yield against inoculum age, by shift">${g}</svg><div class="legend"><span style="--lc:var(--c2)">● Day shift</span><span style="--lc:var(--violet)">■ Night shift</span></div>`;
+}
+function releasedEvidence() {
+  const rel = G.state?.released || {}; let h = '';
+  if (rel.x1) { const s = CASE.stats; h += `<div class="released"><span class="label alarm">Evidence released by facilitator · X1</span><b>Seed-transfer log by shift</b><p class="small">Mean inoculum age at transfer: day ${fmt(s.dayA, 1)} h, night ${fmt(s.nightA, 1)} h. Mean feed-timing deviation: day ${fmt(s.dayF, 1)} min, night ${fmt(s.nightF, 1)} min. Since the April shift-pattern change (B007), seed cultures for night-start batches usually wait overnight before transfer.</p></div>`; }
+  if (rel.x2) h += `<div class="released"><span class="label alarm">Evidence released by facilitator · X2</span><b>Estimated yield-loss contribution (model)</b>${paretoChart(CASE.lossShare.map(x => ({ name: { A: 'Inoculum age', F: 'Feed timing', D: 'DO control', S: 'DO sensor', R: 'Downstream recovery' }[x.k], v: x.loss, d: 3 })).sort((a, b) => b.v - a.v), 'Yield recovered by restoring each factor alone (g/L)')}<p class="tiny muted">Metric: Y(current practice with that factor restored to baseline) − Y(current), from the BatchShift workbook model.</p></div>`;
+  return h;
+}
+
+// Round 3
+function viewR3() {
+  const prim = dval('r3', 'primary'), ex = dval('r3', 'extra', []) || [], conf = dval('r3', 'conf');
+  return `<div class="panel stack"><p>Close the case. Your report is scored on how well it fits the evidence, not on how confident it sounds.</p>
+   ${qBlock(Q.byId.primary, `<div class="opts">${CASE.SUSPECTS.map(s => `<label class="opt ${prim === s.id ? 'on' : ''}"><input type="radio" name="r3_primary" value="${s.id}" data-draft="r3.primary" ${prim === s.id ? 'checked' : ''} ${dis('r3')}><span>${s.icon} ${esc(s.name)}</span></label>`).join('')}</div>
+     <label class="field"><span class="label">Reasoning (reviewed by the facilitator)</span><textarea id="t_r3_primary" data-draftt="r3.primary" maxlength="400" ${dis('r3')}>${esc(dtext('r3', 'primary'))}</textarea></label>`)}
+   ${qBlock(Q.byId.extra, `<div class="opts">${Object.entries(Q.byId.extra.opts).map(([k, t]) => `<label class="opt ${ex.includes(k) ? 'on' : ''}"><input type="checkbox" data-multi="r3.extra" value="${k}" ${ex.includes(k) ? 'checked' : ''} ${dis('r3')}><span>${esc(t)}</span></label>`).join('')}</div>`)}
+   ${qBlock(Q.byId.ev, radios('r3', 'ev', Q.byId.ev.opts))}
+   ${qBlock(Q.byId.alt, radios('r3', 'alt', Q.byId.alt.opts) + `<label class="field"><span class="label">${esc(Q.byId.alt.text)}</span><textarea id="t_r3_alt" data-draftt="r3.alt" maxlength="300" ${dis('r3')}>${esc(dtext('r3', 'alt'))}</textarea></label>`)}
+   ${qBlock(Q.byId.conf, `<div class="scale">${[1, 2, 3, 4, 5].map(n => `<label class="opt ${conf === n ? 'on' : ''}"><input type="radio" name="r3conf" value="${n}" data-draftnum="r3.conf" ${conf === n ? 'checked' : ''} ${dis('r3')}><span>${n}</span></label>`).join('')}</div><p class="tiny muted">Calibration points: confident when right, cautious when unsure.</p>`)}
+   ${qBlock(Q.byId.act, radios('r3', 'act', Q.byId.act.opts))}${qBlock(Q.byId.met, radios('r3', 'met', Q.byId.met.opts))}
+   ${releasedEvidence()}
+   ${submitBar('r3', ['primary', 'extra', 'ev', 'alt', 'conf', 'act', 'met'], 'Submit final report')}</div>`;
+}
+
+// Round 4
+function viewR4() {
+  const v = dval('r4', 'plan', { ids: [] }) || { ids: [] }, ids = v.ids || [], o = CASE.outcome(ids), C = ENGINE.C, over = o.cost > CASE.BUDGET;
+  const tile = (l, val, sub, cls) => `<div class="otile ${cls || ''}"><span class="label">${l}</span><b class="num">${val}</b><span class="tiny muted">${sub}</span></div>`;
+  return `<div class="panel stack"><p>Budget: <b>${CASE.BUDGET} credits</b>. Choose the interventions for the next batch. Outcomes come from the workbook model and update as you choose. Yield, activity and variability are scored separately.</p>
+   <div class="ivs">${CASE.IVS.map(iv => `<label class="iv ${ids.includes(iv.id) ? 'on' : ''}"><input type="checkbox" data-iv="${iv.id}" ${ids.includes(iv.id) ? 'checked' : ''} ${dis('r4')}>
+     <div><div class="row sb"><b>${esc(iv.name)}</b><span class="chip">${iv.cost} cr</span></div><span class="small">${esc(iv.effect)}</span><span class="tiny muted">Limitation: ${esc(iv.limit)}</span></div></label>`).join('')}</div>
+   <div class="outcome" aria-live="polite">
+    ${tile('Predicted yield', fmt(o.Ym, 3) + ' g/L', `nominal ${fmt(o.nominal, 3)} · baseline 5.0 · current 4.3`, o.Ym >= 4.85 ? 'good' : o.Ym > 4.4 ? 'warn' : 'bad')}
+    ${tile('Improvement vs current', pct(o.relCur), `${pct(o.relBase)} vs baseline`)}
+    ${tile('Product activity', fmt(o.SAm, 1) + ' U/mg', `target 95 (assumption) · ${o.belowSA} of 8 batches below`, o.SAm >= 95 ? 'good' : 'bad')}
+    ${tile('Process variability', fmt(o.cv, 2) + '% CV', '8 seeded batches')}
+    ${tile('Cost', `${o.cost} / ${CASE.BUDGET} cr`, over ? 'over budget' : `${CASE.BUDGET - o.cost} cr left`, over ? 'bad' : '')}
+    ${tile('Remaining risk', fmt(o.risk, 0) + ' / 100', 'model risk index')}</div>
+   ${over ? '<div class="note bad small">Over budget. Remove an intervention before submitting.</div>' : ''}
+   <label class="field"><span class="label">${esc(Q.byId.plan.text)}</span><textarea id="t_r4_plan" data-draftt="r4.plan" maxlength="400" ${dis('r4')}>${esc(dtext('r4', 'plan'))}</textarea></label>
+   <p class="tiny muted">Scoring (20): yield 8 · activity 4 · consistency and risk 3 · feasible plan 2 · fits your evidence 3. The highest yield does not win on its own.</p>
+   ${submitBar('r4', ['plan'], 'Submit rescue plan')}</div>`;
+}
+
+// Debrief + end
+function debriefCard(r) {
+  const rv = G.pub?.reveals?.[r], res = G.myRes?.rounds ? G.myRes : null;
+  return `<div class="panel debrief stack"><div class="row sb"><span class="label">Round ${r[1]} debrief · Six Sigma: ${Q.rounds[r].dmaic}</span>${res && G.myRes.closed?.includes(r) ? `<span class="chip good">${fmt(res.rounds[r], 1)} / ${Q.rounds[r].max}</span>` : ''}</div>
+   <p><b>Skill used:</b> ${esc(Q.rounds[r].skill)}</p>
+   ${rv ? `<details open><summary>Why was this correct?</summary><div class="stack small">${Object.entries(rv).map(([k, t]) => `<p>${k.length <= 2 || k === 'r3' || k === 'r4' ? '' : `<b>${esc(Q.byId[k]?.prompt || k)}</b><br>`}${esc(t)}</p>`).join('')}</div></details>` : '<p class="small muted">Explanations appear when the facilitator reveals them.</p>'}
+   ${res && G.myRes.closed?.includes(r) ? `<details><summary>Your scoring detail</summary><table class="small">${Q.inRound(r).map(q => `<tr><td>${esc(q.prompt)}</td><td class="n">${fmt(res.per?.[q.id] ?? 0, 1)}/${q.max}</td><td class="tiny muted">${esc(res.why?.[q.id] || 'not answered')}</td></tr>`).join('')}</table></details>` : ''}</div>`;
+}
+function viewEnded() {
+  const lb = G.pub?.leaderboard, me = lb?.rows?.find(x => x.uid === DB.uid);
+  const rf = G.myReflect || {};
+  return `<div class="panel stack center"><span class="label alarm">Case closed</span><h2>${me ? `You placed #${me.rank} with ${fmt(me.total, 1)} points` : 'Thanks for investigating'}</h2></div>
+   <div class="panel stack"><h3>Leaderboard</h3>${lbTable(lb)}</div>
+   ${ROUNDS.map(debriefCard).join('')}
+   <div class="panel stack"><h3>Post-jury reflection</h3>${Q.reflect.map(([k, l]) => `<label class="field"><span class="label">${esc(l)}</span><textarea id="rf_${k}" data-rf="${k}" maxlength="400">${esc(G.draft['rf.' + k] ?? rf[k] ?? '')}</textarea></label>`).join('')}
+    <div class="row"><button class="btn primary" data-act="saveReflect">Save reflection</button>${rf.at ? `<span class="small good">✓ Saved ${new Date(rf.at).toLocaleTimeString()}</span>` : ''}<button class="btn" data-act="myBrief">Download our executive brief</button><button class="btn" data-act="myReflect">Download our reflection</button></div></div>`;
+}
+
+// ---------- team events ----------
+function setDraft(k, v) { G.draft[k] = v; }
+function collect(r, q) {
+  const v = dval(r, q), t = dtext(r, q);
+  if (q === 'lead') return (v && v.lead) ? { v, text: '' } : null;
+  if (q === 'c1') return v && Object.keys(Q.byId.c1.items).every(k => v[k]) ? { v } : null;
+  if (q === 'extra') return { v: v || [] };
+  if (q === 'why') return v && t.trim() ? { v, text: t.trim() } : null;
+  if (q === 'plan') return v && v.ids ? { v, text: t } : null;
+  if (v == null || v === '') return null;
+  return { v, text: t };
+}
+async function submitAnswers(r, qs) {
+  if (!roundOpen(r)) return toast('This round is closed.', true);
+  const missing = [], out = {};
+  for (const q of qs) { const c = collect(r, q); if (!c) missing.push(q); else out[q] = c; }
+  if (r === 'r1' && !dval('r1', 'lead', {})?.conf) missing.push('confidence');
+  if (missing.length) return toast('Answer every question first: ' + missing.map(q => Q.byId[q]?.prompt || q).join('; '), true);
+  if (r === 'r4' && CASE.outcome(out.plan.v.ids).cost > CASE.BUDGET) return toast('Over budget. Remove an intervention first.', true);
+  const now = DB.now(), rs = G.state.rounds[r], late = rs?.endsAt && now > rs.endsAt;
+  const upd = {}, unchanged = [];
+  for (const [q, c] of Object.entries(out)) {
+    const prev = ans(r, q);
+    if (prev && JSON.stringify(prev.v) === JSON.stringify(c.v) && (prev.text || '') === (c.text || '')) { unchanged.push(q); continue; }
+    upd[q] = { v: c.v, text: c.text || '', at: now, rev: (prev?.rev || 0) + 1, late: !!late };
+  }
+  if (!Object.keys(upd).length) return toast('Already submitted. Nothing changed.');
+  try {
+    await DB.update(P('answers', DB.uid, r), upd);
+    for (const [q, a] of Object.entries(upd)) await DB.push(P('history', DB.uid, r, q), a).catch(() => { });
+    Object.keys(upd).forEach(q => { delete G.draft[r + '.' + q]; delete G.draft[r + '.' + q + '.t']; });
+    toast(late ? 'Submitted (late)' : 'Submitted');
+  } catch (e) { toast(/PERMISSION/.test(e.message) ? 'The round has closed. Your answer was not recorded.' : 'Could not submit: ' + e.message, true); }
+}
+
+/* ===================== CASE 014 APP: facilitator, projector board, scoring loop, exports ===================== */
+function viewHostSetup() {
+  const cfg = currentCfg(), v = G.view;
+  return `<div class="wrap narrow stack">${incidentBoard(false)}
+   <div class="panel stack"><h2>Facilitator entry</h2>
+    <label class="field"><span class="label">Facilitator passphrase (unlocks the answer key and scoring)</span><input type="password" id="h_pass" autocomplete="off" value="${esc(v.pass || '')}"></label>
+    <label class="field"><span class="label">Session title (optional)</span><input type="text" id="h_title" maxlength="60" value="${esc(v.title || 'Six Sigma Bioprocess Detective')}"></label>
+    <div class="row"><button class="btn primary big" data-act="hostCreate">Create new session</button>${v.resume ? `<button class="btn" data-act="hostResume">Resume session ${esc(v.resume)}</button>` : ''}</div>
+    ${v.hostErr ? `<div class="note bad small" role="alert">${esc(v.hostErr)}</div>` : ''}</div>
+   <details class="panel" ${cfg ? '' : 'open'}><summary>Live multiplayer setup (Firebase) · ${cfg ? 'configured: ' + esc(cfg.projectId) : 'not configured: demo mode'}</summary>
+    <div class="stack small"><p>Paste the <code>firebaseConfig</code> object from your Firebase project settings. It is saved on this device and built into the join link and QR code, so students need nothing else.</p>
+     <textarea id="h_cfg" rows="7" placeholder="{ apiKey: '...', authDomain: '...', databaseURL: 'https://...firebasedatabase.app', projectId: '...', appId: '...' }"></textarea>
+     <div class="row"><button class="btn" data-act="saveCfg">Save and connect</button>${cfg ? '<button class="btn ghost" data-act="clearCfg">Remove config (use demo mode)</button>' : ''}</div>
+     <p class="tiny muted">The config must include databaseURL. Enable Anonymous sign-in and publish the supplied database rules first.</p></div></details>
+   <a class="btn ghost" href="#" data-act="goHome">Back to team join</a></div>`;
+}
+async function hostCreate() {
+  const pass = $('#h_pass').value, title = $('#h_title').value.trim();
+  G.view.pass = pass; G.view.title = title; G.view.hostErr = null;
+  try { G.host.K = await unlockKey(pass); } catch (e) { G.view.hostErr = 'Wrong facilitator passphrase.'; return render(); }
+  let code, ok = false;
+  for (let i = 0; i < 6 && !ok; i++) { code = Array.from({ length: 6 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join(''); ok = !(await DB.get(`sessions/${code}/meta`).catch(() => null)); }
+  if (!ok) { G.view.hostErr = 'Could not generate a free session code. Try again.'; return render(); }
+  try {
+    await DB.set(`sessions/${code}/meta`, { hostUid: DB.uid, createdAt: DB.now(), title: title || 'Case 014' });
+    await DB.set(`sessions/${code}/state`, { phase: 'lobby', rounds: Object.fromEntries(ROUNDS.map(r => [r, { status: 'pending', mins: Q.rounds[r].mins }])), allowRevisions: false, released: {}, board: 'provisional', revealMode: 'afterClose', finalized: false });
+  } catch (e) { G.view.hostErr = 'Could not create the session: ' + e.message; return render(); }
+  LS.set('case014-host-sid', code); try { sessionStorage.setItem('case014-pass', pass); } catch (e) { }
+  await openSession(code, 'host'); audit('Session created'); render();
+}
+async function hostResume() {
+  const pass = $('#h_pass').value; G.view.hostErr = null;
+  try { G.host.K = await unlockKey(pass); } catch (e) { G.view.hostErr = 'Wrong facilitator passphrase.'; return render(); }
+  const meta = await DB.get(`sessions/${G.view.resume}/meta`).catch(() => null);
+  if (!meta || meta.hostUid !== DB.uid) { G.view.hostErr = 'That session was created on another device or browser, so this device cannot control it. Create a new session.'; return render(); }
+  try { sessionStorage.setItem('case014-pass', pass); } catch (e) { }
+  await openSession(G.view.resume, 'host'); render();
+}
+function hostSubscribe() {
+  const H = G.host, on = (k, path) => G.unsub.push(DB.on(P(path), v => { H[k] = v || {}; scheduleScore(); render(); }));
+  on('teams', 'teams'); on('answers', 'answers'); on('history', 'history'); on('adjust', 'adjust'); on('reflect', 'reflect'); on('audit', 'audit');
+  G.unsub.push(DB.on(P('scores'), v => { H.scores = v || {}; }));
+}
+function audit(text) { if (G.sid && G.role === 'host') DB.push(P('audit'), { at: DB.now(), text }).catch(() => { }); }
+
+// ---------- scoring loop (host device only) ----------
+let scoreT = null, lastWrite = {};
+function scheduleScore() { if (G.role !== 'host' || !G.host.K) return; clearTimeout(scoreT); scoreT = setTimeout(scoreAll, 400); }
+function computeAll() {
+  const H = G.host, st = G.state || {}, out = {};
+  for (const [uid, t] of Object.entries(H.teams || {})) {
+    const s = SCORE.team(H.answers?.[uid] || {}, H.K, H.adjust?.[uid] || {});
+    const status = ROUNDS.filter(r => ['open', 'closed', 'paused'].includes(st.rounds?.[r]?.status)).map(r => {
+      const qs = Q.inRound(r), a = H.answers?.[uid]?.[r] || {}, n = qs.filter(q => a[q.id]).length, late = qs.some(q => a[q.id]?.late);
+      return `R${r[1]} ${n === qs.length ? (late ? 'late' : 'submitted') : n ? n + '/' + qs.length : 'pending'}`;
+    });
+    out[uid] = { ...s, uid, name: t.name, icon: t.icon, status: status.join(' · ') || 'joined' };
+  }
+  return out;
+}
+async function scoreAll() {
+  const st = G.state; if (!st || !G.host.K) return;
+  const all = computeAll(), ranked = SCORE.rank(Object.values(all)), H = G.host;
+  const closed = ROUNDS.filter(r => st.rounds?.[r]?.status === 'closed');
+  const writes = [];
+  const scores = Object.fromEntries(ranked.map(t => [t.uid, { total: t.total, rounds: t.rounds, per: t.per, why: t.why, rank: t.rank, correct: t.correct }]));
+  if (JSON.stringify(scores) !== lastWrite.scores) { lastWrite.scores = JSON.stringify(scores); writes.push(DB.set(P('scores'), scores)); }
+  // per-team results: only rounds the reveal setting allows
+  const vis = st.revealMode === 'immediate' ? ROUNDS : closed;
+  const results = Object.fromEntries(ranked.map(t => [t.uid, { closed: vis, rounds: Object.fromEntries(vis.map(r => [r, t.rounds[r]])), per: Object.fromEntries(Object.entries(t.per).filter(([q]) => vis.includes(Q.byId[q].r))), why: Object.fromEntries(Object.entries(t.why).filter(([q]) => vis.includes(Q.byId[q].r))) }]));
+  if (JSON.stringify(results) !== lastWrite.results) { lastWrite.results = JSON.stringify(results); writes.push(DB.set(P('results'), results)); }
+  // public leaderboard per facilitator setting
+  const mode = st.board || 'provisional', ended = st.phase === 'ended';
+  let rows = [];
+  if (mode === 'provisional' || (mode === 'final' && st.finalized) || (mode === 'anon') || (ended && st.finalized)) {
+    rows = ranked.map((t, i) => ({ uid: t.uid, rank: t.rank, name: mode === 'anon' && !(ended && st.finalized) ? 'Team ' + String.fromCharCode(65 + i) : t.name, icon: mode === 'anon' && !(ended && st.finalized) ? '❔' : t.icon, total: t.total, r1: t.rounds.r1, r2: t.rounds.r2, r3: t.rounds.r3, r4: t.rounds.r4, correct: t.correct, reasoning: t.reasoning, intervention: t.intervention, status: t.status }));
+    if (mode === 'anon' && !(ended && st.finalized)) rows.forEach(r => { r.uid = null; });
+  }
+  if (mode === 'final' && st.finalized && st.finalSnapshot) rows = st.finalSnapshot;
+  const lb = { mode, finalized: !!st.finalized, at: DB.now(), rows };
+  const cmp = JSON.stringify({ ...lb, at: 0 });
+  if (cmp !== lastWrite.lb) { lastWrite.lb = cmp; writes.push(DB.set(P('public/leaderboard'), lb)); }
+  await Promise.all(writes).catch(e => toast('Score update failed: ' + e.message, true));
+}
+function hostTick() {
+  const st = G.state; if (!st || !G.host.autoClose) return;
+  for (const r of ROUNDS) { const rs = st.rounds?.[r]; if (rs?.status === 'open' && rs.endsAt && DB.now() > rs.endsAt + 15000 && !rs.noAuto) { closeRound(r, true); break; } }
+}
+
+// ---------- round control ----------
+async function setState(patch, msg) { try { await DB.update(P('state'), patch); if (msg) audit(msg); } catch (e) { toast('Could not update: ' + e.message, true); } }
+async function openRound(r) {
+  const mins = Math.max(0.5, Math.min(30, +($(`#mins_${r}`)?.value || Q.rounds[r].mins)));
+  const patch = { phase: r, [`rounds/${r}`]: { status: 'open', mins, openedAt: DB.now(), endsAt: DB.now() + mins * 60000 } };
+  for (const x of ROUNDS) if (x !== r && G.state.rounds?.[x]?.status === 'open') patch[`rounds/${x}/status`] = 'closed';
+  await setState(patch, `Opened round ${r[1]} for ${mins} min`);
+}
+async function closeRound(r, auto) { await setState({ [`rounds/${r}/status`]: 'closed', [`rounds/${r}/closedAt`]: DB.now() }, `${auto ? 'Auto-closed' : 'Closed'} round ${r[1]}`); scheduleScore(); }
+async function pauseRound(r) { const rs = G.state.rounds[r]; if (rs.status === 'open') await setState({ [`rounds/${r}/status`]: 'paused', [`rounds/${r}/remaining`]: Math.max(0, rs.endsAt - DB.now()) }, `Paused round ${r[1]}`); else if (rs.status === 'paused') await setState({ [`rounds/${r}/status`]: 'open', [`rounds/${r}/endsAt`]: DB.now() + (rs.remaining || 0) }, `Resumed round ${r[1]}`); }
+async function extendRound(r) { const rs = G.state.rounds[r]; if (rs.status === 'open') await setState({ [`rounds/${r}/endsAt`]: rs.endsAt + 60000 }, `Added 1 min to round ${r[1]}`); }
+async function revealRound(r) {
+  const K = G.host.K, ex = K.explain, items = {};
+  if (r === 'r1') items.r1 = ex.r1; if (r === 'r2') ['a1', 'a2', 'b1', 'b2', 'c1', 'd1', 'd2', 'd3'].forEach(q => items[q] = ex[q]); if (r === 'r3') items.r3 = ex.r3; if (r === 'r4') items.r4 = ex.r4;
+  try { await DB.set(P('public/reveals', r), items); audit(`Revealed explanations for round ${r[1]}`); toast('Explanations revealed'); } catch (e) { toast(e.message, true); }
+}
+async function saveAdjust(uid, q) {
+  const pts = +$(`#adj_${uid}_${q}`).value, reason = $(`#adjr_${uid}_${q}`).value.trim(), max = Q.byId[q].max;
+  if (!isFinite(pts) || pts < 0 || pts > max) return toast(`Points must be between 0 and ${max}.`, true);
+  if (reason.length < 3) return toast('Give a short reason for the adjustment.', true);
+  const team = G.host.teams[uid]?.name, auto = SCORE.team(G.host.answers?.[uid] || {}, G.host.K, {}).per[q] ?? 0;
+  try { await DB.set(P('adjust', uid, q), { points: pts, reason, at: DB.now(), auto }); audit(`Adjusted ${team} · ${q}: ${fmt(auto, 1)} → ${pts} (${reason})`); toast('Score adjusted'); } catch (e) { toast(e.message, true); }
+}
+async function clearAdjust(uid, q) { try { await DB.set(P('adjust', uid, q), null); audit(`Removed adjustment ${G.host.teams[uid]?.name} · ${q}`); } catch (e) { toast(e.message, true); } }
+
+// ---------- host view ----------
+function viewHost() {
+  const st = G.state || {}, H = G.host, url = G.sid ? joinURL(G.sid) : '', scores = computeAll(), ranked = SCORE.rank(Object.values(scores));
+  if (!H.K) return `<div class="wrap narrow"><div class="panel stack"><h2>Unlock scoring</h2><p>Enter the facilitator passphrase again to unlock the answer key on this device.</p><label class="field"><span class="label">Passphrase</span><input type="password" id="h_pass"></label><button class="btn primary" data-act="unlock">Unlock</button></div></div>`;
+  const teamsN = Object.keys(H.teams || {}).length;
+  return `<div class="wrap host stack">
+   <div class="hosthead"><div class="joinbox"><div><span class="label">Join code</span><div class="code num">${esc(G.sid)}</div><div class="small muted">${esc(G.meta?.title || '')}</div>
+      <div class="row"><button class="btn sm" data-act="copyLink">Copy join link</button><a class="btn sm" href="#board=${esc(G.sid)}" target="_blank" rel="noopener">Open projector board</a></div>
+      <input type="text" readonly class="linkbox" value="${esc(url)}" aria-label="Join link"></div><div id="qr" class="qr" aria-label="QR code to join"></div></div>
+    <div class="panel stack"><div class="row sb"><h3>Session</h3><span class="chip">${teamsN} team${teamsN === 1 ? '' : 's'}</span></div>
+     <p class="small"><b>${esc(phaseLabel(st.phase))}</b>${phaseRound() ? ` · <span class="num" data-timer="${phaseRound()}"></span>` : ''}</p>
+     <label class="row small"><input type="checkbox" id="autoClose" data-act-change="autoClose" ${H.autoClose ? 'checked' : ''}> Auto-close a round 15 s after its timer ends</label>
+     <label class="row small"><input type="checkbox" data-state="allowRevisions" ${st.allowRevisions ? 'checked' : ''}> Allow revisions after a round closes</label>
+     <label class="field small"><span class="label">Show answers and round scores to teams</span><select data-state="revealMode"><option value="afterClose" ${st.revealMode !== 'immediate' ? 'selected' : ''}>After each round closes</option><option value="immediate" ${st.revealMode === 'immediate' ? 'selected' : ''}>Immediately after submitting</option></select></label>
+     <div class="row"><button class="btn warn" data-act="endSession" ${st.phase === 'ended' ? 'disabled' : ''}>End session</button>${st.phase === 'ended' ? '<button class="btn" data-act="reopen">Reopen</button>' : ''}</div></div></div>
+   <div class="panel stack"><h3>Rounds</h3><div class="rounds">${ROUNDS.map(r => { const rs = st.rounds?.[r] || {}; const s = rs.status || 'pending';
+     return `<div class="rctl ${s}"><div class="row sb"><b>R${r[1]} · ${Q.rounds[r].name}</b><span class="chip ${s === 'open' ? 'good' : s === 'paused' ? 'warn' : ''}">${s}</span></div>
+      <div class="row small"><span class="num clock xs" data-timer="${r}"></span><label class="row">min <input type="number" id="mins_${r}" min="0.5" max="30" step="0.5" value="${rs.mins || Q.rounds[r].mins}" style="width:64px"></label></div>
+      <div class="row">${s === 'open' || s === 'paused' ? `<button class="btn sm" data-act="pause" data-r="${r}">${s === 'paused' ? 'Resume' : 'Pause'}</button><button class="btn sm" data-act="extend" data-r="${r}" ${s !== 'open' ? 'disabled' : ''}>+1 min</button><button class="btn sm warn" data-act="close" data-r="${r}">Close</button>` : `<button class="btn sm ${s === 'pending' ? 'primary' : ''}" data-act="open" data-r="${r}">${s === 'closed' ? 'Reopen' : 'Open'}</button>`}
+       <button class="btn sm" data-act="reveal" data-r="${r}" ${s !== 'closed' ? 'disabled title="Close the round first"' : ''}>${G.pub?.reveals?.[r] ? 'Revealed ✓' : 'Reveal why'}</button></div></div>`; }).join('')}</div>
+    <div class="row small"><b>Release evidence:</b>${[['x1', 'X1 Seed-transfer log by shift'], ['x2', 'X2 Loss-contribution Pareto']].map(([k, n]) => `<label class="row"><input type="checkbox" data-release="${k}" ${st.released?.[k] ? 'checked' : ''}> ${n}</label>`).join('')}</div></div>
+   <div class="stack"><div class="panel stack"><div class="row sb"><h3>Leaderboard</h3>
+     <select data-state="board" aria-label="Leaderboard display"><option value="provisional" ${st.board === 'provisional' ? 'selected' : ''}>Live provisional scores</option><option value="final" ${st.board === 'final' ? 'selected' : ''}>Finalised scores only</option><option value="anon" ${st.board === 'anon' ? 'selected' : ''}>Anonymous labels during grading</option><option value="hidden" ${st.board === 'hidden' ? 'selected' : ''}>Hidden</option></select></div>
+     <div class="row"><button class="btn primary" data-act="finalize">${st.finalized ? 'Re-finalise scores' : 'Finalise scores'}</button>${st.finalized ? '<span class="chip good">finalised</span>' : ''}</div>
+     ${hostBoard(ranked)}</div>
+    <div class="panel stack"><h3>Teams</h3>${teamTable(ranked)}</div></div>
+   ${inspector()}
+   <details class="panel"><summary>Answer key (facilitator only)</summary>${keyPanel()}</details>
+   <div class="grid2"><div class="panel stack"><h3>Exports</h3><div class="exports">
+     <button class="btn" data-act="exp" data-k="answers">All answers + revision history (CSV)</button><button class="btn" data-act="exp" data-k="results">Results and scores (CSV)</button>
+     <button class="btn" data-act="exp" data-k="log">Evidence and assumptions log (CSV)</button><button class="btn" data-act="exp" data-k="briefs">Executive briefs, all teams (HTML)</button>
+     <button class="btn" data-act="exp" data-k="reflect">Post-jury reflections (HTML)</button><button class="btn" data-act="exp" data-k="audit">Audit log (CSV)</button>
+     <a class="btn" href="BatchShift_Quantitative_Workbook.xlsx" download>Quantitative workbook (XLSX)</a></div>
+     <p class="tiny muted">HTML reports open in any browser and print to PDF.</p>
+     ${DB.mode === 'demo' ? `<div class="note small">Demo mode tools. Sample teams are labelled DEMO and are not real submissions.<div class="row"><button class="btn sm" data-act="seedDemo">Add 3 DEMO sample teams with answers</button><button class="btn sm ghost" data-act="wipeDemo">Wipe demo data</button></div></div>` : ''}</div>
+    <div class="panel stack"><h3>Audit log</h3><div class="audit">${Object.values(H.audit || {}).sort((a, b) => b.at - a.at).slice(0, 40).map(a => `<div><span class="num tiny muted">${new Date(a.at).toLocaleTimeString()}</span> ${esc(a.text)}</div>`).join('') || '<p class="small muted">No entries yet.</p>'}</div></div></div></div>`;
+}
+function hostBoard(ranked) { return lbTable({ mode: 'provisional', finalized: G.state?.finalized, rows: ranked.map(t => ({ ...t, r1: t.rounds.r1, r2: t.rounds.r2, r3: t.rounds.r3, r4: t.rounds.r4 })) }); }
+function teamTable(ranked) {
+  if (!ranked.length) return '<p class="small muted">No teams yet. Share the code or QR.</p>';
+  return `<div class="scroll"><table><thead><tr><th>Team</th><th>Members</th><th>Status</th><th class="n">Total</th></tr></thead><tbody>${ranked.map(t => { const tm = G.host.teams[t.uid]; return `<tr><td>${esc(tm.icon)} ${esc(tm.name)}${tm.demo ? ' <span class="chip warn">DEMO</span>' : ''}</td><td class="small">${esc(tm.members || '—')}</td><td class="small">${esc(t.status)}</td><td class="n">${fmt(t.total, 1)}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+function inspector() {
+  const H = G.host, f = H.insp, qs = Q.inRound(f.r), q = qs.find(x => x.id === f.q) ? f.q : qs[0].id;
+  const teams = Object.entries(H.teams || {});
+  const rows = teams.map(([uid, t]) => {
+    const a = H.answers?.[uid]?.[f.r]?.[q], auto = SCORE.team(H.answers?.[uid] || {}, H.K, {}).per[q], adj = H.adjust?.[uid]?.[q], hist = H.history?.[uid]?.[f.r]?.[q], nh = hist ? Object.keys(hist).length : 0;
+    return `<tr class="${a ? '' : 'missing'}"><td>${esc(t.icon)} ${esc(t.name)}</td><td class="small">${a ? esc(prettyAns(q, a.v)) : '<span class="chip">unanswered</span>'}${a?.text ? `<div class="tiny quote">“${esc(a.text)}”</div>` : ''}</td>
+     <td class="small num">${a ? new Date(a.at).toLocaleTimeString() + (a.late ? ' <span class="chip warn">late</span>' : '') + (nh > 1 ? ` · ${nh} revisions` : '') : ''}</td>
+     <td class="n">${a ? fmt(auto ?? 0, 1) : '—'}</td>
+     <td><div class="adj"><input type="number" id="adj_${uid}_${q}" min="0" max="${Q.byId[q].max}" step="0.5" value="${adj ? adj.points : ''}" placeholder="${a ? fmt(auto ?? 0, 1) : ''}" aria-label="Adjusted points"><input type="text" id="adjr_${uid}_${q}" placeholder="Reason" value="${esc(adj?.reason || '')}" maxlength="120"><button class="btn sm" data-act="adjust" data-uid="${uid}" data-q="${q}">Save</button>${adj ? `<button class="btn sm ghost" data-act="unadjust" data-uid="${uid}" data-q="${q}">Undo</button>` : ''}</div></td></tr>`;
+  }).join('');
+  return `<div class="panel stack"><div class="row sb"><h3>Submissions inspector</h3><div class="row">
+    <select data-insp="r">${ROUNDS.map(r => `<option value="${r}" ${f.r === r ? 'selected' : ''}>Round ${r[1]}</option>`).join('')}</select>
+    <select data-insp="q">${qs.map(x => `<option value="${x.id}" ${q === x.id ? 'selected' : ''}>${esc(x.prompt.slice(0, 60))} (${x.max})</option>`).join('')}</select></div></div>
+   ${teams.length ? `<div class="scroll"><table class="insp"><thead><tr><th>Team</th><th>Answer</th><th>Submitted</th><th class="n">Auto</th><th>Adjust (0–${Q.byId[q].max}) with reason</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="small muted">No teams yet.</p>'}
+   <p class="tiny muted">Structured answers are scored automatically from the answer key. An adjustment replaces the automatic score for that question and is recorded in the audit log.</p></div>`;
+}
+function keyPanel() {
+  const K = G.host.K, n = K.narrative;
+  return `<div class="stack small">${[['Intended leading hypothesis', n.leading], ['Supporting evidence', n.support], ['Contradictory evidence', n.contra], ['Red-herring mechanism', n.herring], ['Accepted alternative interpretations', n.alternatives], ['Expected corrective actions', n.actions], ['Assumptions and limitations', n.limits]].map(([h, t]) => `<p><b>${h}.</b> ${esc(t)}</p>`).join('')}
+   <h4>Per-question explanations</h4>${Object.entries(K.explain).map(([k, t]) => `<p><b>${esc(Q.byId[k]?.prompt || 'Round ' + k[1])}</b> ${esc(t)}</p>`).join('')}
+   <h4>Points table</h4><pre class="eq">${esc(JSON.stringify(K.pts, null, 1))}</pre></div>`;
+}
+
+// ---------- projector board ----------
+function viewBoard() {
+  const st = G.state || {}, r = phaseRound(), lb = G.pub?.leaderboard, win = st.phase === 'ended' && lb?.finalized && lb.rows?.[0];
+  if (!G.sid) return `<div class="wrap">${incidentBoard(true)}<p class="muted">No session for this board.</p></div>`;
+  return `<div class="wrap board stack"><div class="boardhead">${incidentBoard(false)}
+    <div class="panel stack center"><span class="label">Join at</span><div class="code num">${esc(G.sid)}</div><div id="qr" class="qr"></div></div>
+    <div class="panel stack center"><span class="label">${esc(phaseLabel(st.phase))}</span>${r ? `<div class="clock xl num" data-timer="${r}"></div><p>${esc(Q.rounds[r].dmaic)}: ${esc(Q.rounds[r].skill)}</p>` : '<div class="clock xl num">--:--</div>'}</div></div>
+   ${win ? `<div class="winner"><span class="label alarm">Case solved by</span><div class="wname">${esc(win.icon)} ${esc(win.name)}</div><div class="num">${fmt(win.total, 1)} points</div></div>` : ''}
+   <div class="panel stack"><h2>Leaderboard</h2>${lbTable(lb)}</div></div>`;
+}
+
+// ---------- exports ----------
+function teamRows() { return Object.entries(G.host.teams || {}).map(([uid, t]) => ({ uid, ...t })); }
+function exportAnswers() {
+  const out = [['session', 'team_id', 'team', 'demo', 'round', 'question', 'question_text', 'answer', 'reasoning_text', 'submitted_at', 'revision', 'late', 'auto_points', 'final_points', 'max', 'scoring_rationale', 'adjust_reason', 'record']];
+  for (const t of teamRows()) {
+    const s = SCORE.team(G.host.answers?.[t.uid] || {}, G.host.K, G.host.adjust?.[t.uid] || {}), auto = SCORE.team(G.host.answers?.[t.uid] || {}, G.host.K, {});
+    for (const q of Q.list) {
+      const a = G.host.answers?.[t.uid]?.[q.r]?.[q.id], hist = Object.values(G.host.history?.[t.uid]?.[q.r]?.[q.id] || {}).sort((x, y) => x.at - y.at);
+      hist.forEach((h, i) => { if (i < hist.length - 1) out.push([G.sid, t.uid, t.name, !!t.demo, q.r, q.id, q.prompt, prettyAns(q.id, h.v), h.text || '', new Date(h.at).toISOString(), h.rev, !!h.late, '', '', q.max, '', '', 'superseded revision']); });
+      out.push([G.sid, t.uid, t.name, !!t.demo, q.r, q.id, q.prompt, a ? prettyAns(q.id, a.v) : '', a?.text || '', a ? new Date(a.at).toISOString() : '', a?.rev || '', !!a?.late, a ? fmt(auto.per[q.id] ?? 0, 2) : '', a || G.host.adjust?.[t.uid]?.[q.id] ? fmt(s.per[q.id] ?? 0, 2) : '0', q.max, s.why[q.id] || (a ? '' : 'not answered'), G.host.adjust?.[t.uid]?.[q.id]?.reason || '', a ? 'final answer' : 'unanswered']);
+    }
+  }
+  download(`case014_${G.sid}_answers.csv`, csv(out), 'text/csv');
+}
+function exportResults() {
+  const r = SCORE.rank(Object.values(computeAll()));
+  download(`case014_${G.sid}_results.csv`, csv([['rank', 'team', 'members', 'demo', 'R1 /10', 'R2 /40', 'R3 /30', 'R4 /20', 'total /100', 'questions at full marks', 'evidence reasoning (R3)', 'analysis (R2)', 'intervention (R4)', 'status'],
+    ...r.map(t => [t.rank, t.name, G.host.teams[t.uid]?.members || '', !!G.host.teams[t.uid]?.demo, fmt(t.rounds.r1, 2), fmt(t.rounds.r2, 2), fmt(t.rounds.r3, 2), fmt(t.rounds.r4, 2), fmt(t.total, 2), t.correct, fmt(t.reasoning, 2), fmt(t.analysis, 2), fmt(t.intervention, 2), t.status])]), 'text/csv');
+}
+function exportLog() {
+  const out = [['record_type', 'source_id', 'item', 'value', 'classification', 'notes']];
+  const C = ENGINE.C;
+  out.push(['problem', 'DEF-1', 'Baseline yield (mean B001–B006)', fmt(C.Y0, 3) + ' g/L', 'synthetic observation', 'fictional educational scenario value']);
+  out.push(['problem', 'DEF-2', 'Current yield (mean B019–B024)', fmt(C.Ycur, 3) + ' g/L', 'synthetic observation', '']);
+  out.push(['problem', 'DEF-3', 'Relative decline', fmt(100 * (C.Y0 - C.Ycur) / C.Y0, 1) + '%', 'calculated output', '(5.0 − 4.3) / 5.0 × 100']);
+  for (const r of CASE.rows) out.push(['batch_record', r.id, `${r.date} ${r.shift}`, `A=${fmt(r.A, 1)} h; F=${fmt(r.F, 1)} min; D=${fmt(r.D, 0)} min; R=${fmt(r.R, 3)}; Y=${fmt(r.Y, 3)} g/L; SA=${fmt(r.SA, 1)} U/mg; cal=${r.calDays} d${r.docErr ? '; doc error' : ''}${r.lot ? '; lot change' : ''}${r.filter ? '; filter change' : ''}`, 'synthetic observation', 'generated by the BatchShift workbook model, seed 1414']);
+  for (const p of CASE.PARETO) out.push(['pareto', 'PAR-' + p.cat.slice(0, 4).toUpperCase(), p.cat, p.n, 'calculated output', 'count of batches; rule: ' + p.rule]);
+  for (const iv of CASE.IVS) out.push(['intervention', 'IV-' + iv.id, iv.name, iv.cost + ' cr', 'assumption', iv.effect + ' Limitation: ' + iv.limit]);
+  Object.entries(C).forEach(([k, v]) => out.push(['model_assumption', 'C.' + k, k, v, 'assumed coefficient', 'BatchShift_Quantitative_Workbook.xlsx, Assumptions sheet']));
+  out.push(['scoring', 'SCORE', 'Round totals', 'R1 10 · R2 40 · R3 30 · R4 20 = 100', 'scoring assumption', 'partial credit per answer key; facilitator adjustments recorded in audit log']);
+  for (const t of teamRows()) for (const q of ['lead', 'a1', 'd1', 'primary', 'ev', 'alt', 'plan']) { const a = G.host.answers?.[t.uid]?.[Q.byId[q].r]?.[q]; if (a) out.push(['team_interpretation', `${t.name}/${q}`, Q.byId[q].prompt, prettyAns(q, a.v), 'team interpretation', a.text || '']); }
+  out.push(['external_reference', 'none', 'External references', 'none used', 'n/a', 'All data are synthetic; no external sources are cited.']);
+  download(`case014_${G.sid}_evidence_assumptions_log.csv`, csv(out), 'text/csv');
+}
+const docShell = (title, body) => `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font:14px/1.5 Georgia,serif;color:#111;max-width:780px;margin:24px auto;padding:0 20px}h1{font:700 22px Arial,sans-serif;margin:0 0 4px}h2{font:700 15px Arial,sans-serif;margin:16px 0 4px;text-transform:uppercase;letter-spacing:.05em}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ccc;padding:4px 6px;text-align:left;font-size:13px}.muted{color:#555;font-size:12px}.page{page-break-after:always;padding-bottom:20px}</style></head><body>${body}</body></html>`;
+function briefHTML(name, A, res) {
+  const C = ENGINE.C, g = (r, q) => A?.[r]?.[q], sus = id => CASE.SUSPECTS.find(s => s.id === id)?.name || '—';
+  const plan = g('r4', 'plan'), o = plan ? CASE.outcome(plan.v.ids) : null;
+  return `<div class="page"><h1>Executive brief · ${esc(name)}</h1><div class="muted">Case 014 · NovaBio Enzymatics (fictional) · ${new Date().toLocaleDateString()}</div>
+   <h2>Case summary</h2><p>Final yield fell from ${fmt(C.Y0, 1)} to ${fmt(C.Ycur, 1)} g/L, a ${fmt(100 * (C.Y0 - C.Ycur) / C.Y0, 0)}% relative decline ((5.0 − 4.3) / 5.0 × 100), with inconsistent product activity.</p>
+   <h2>Final hypothesis</h2><p>Primary: <b>${esc(sus(g('r3', 'primary')?.v))}</b>${g('r3', 'extra')?.v?.length ? '. Additional contributors: ' + esc(prettyAns('extra', g('r3', 'extra').v)) : ''}. Confidence ${g('r3', 'conf')?.v ?? '—'}/5. ${esc(g('r3', 'primary')?.text || '')}</p>
+   <h2>Key evidence</h2><p>${esc(g('r3', 'ev') ? prettyAns('ev', g('r3', 'ev').v) : '—')}</p>
+   <h2>Remaining alternative</h2><p>${esc(g('r3', 'alt') ? prettyAns('alt', g('r3', 'alt').v) : '—')} ${esc(g('r3', 'alt')?.text || '')}</p>
+   <h2>Intervention and simulated result</h2>${o ? `<p>${esc(prettyAns('plan', plan.v))}.</p><table><tr><th>Predicted yield</th><th>vs current</th><th>Activity</th><th>Variability (CV)</th><th>Cost</th><th>Risk</th></tr><tr><td>${fmt(o.Ym, 3)} g/L</td><td>${pct(o.relCur)}</td><td>${fmt(o.SAm, 1)} U/mg</td><td>${fmt(o.cv, 2)}%</td><td>${o.cost}/${CASE.BUDGET} cr</td><td>${fmt(o.risk, 0)}/100</td></tr></table>` : '<p>No plan submitted.</p>'}
+   <h2>Control</h2><p>Action: ${esc(g('r3', 'act') ? prettyAns('act', g('r3', 'act').v) : '—')}. Metric: ${esc(g('r3', 'met') ? prettyAns('met', g('r3', 'met').v) : '—')}.</p>
+   <h2>Board recommendation</h2><p>Approve the ${o ? 'selected interventions' : 'corrective action'} and verify over 8 consecutive batches against the educational targets (mean yield ≥ 4.85 g/L, activity ≥ 95 U/mg) before closing the CAPA.</p>
+   <h2>Limitations</h2><p class="muted">Fictional educational data from the BatchShift workbook model; coefficients are assumptions, not validated values. 24 batches give limited statistical power. Simulated outcomes are not predictions for a real plant.</p>
+   ${res ? `<p class="muted">Competition score: ${fmt(res.total ?? Object.values(res.rounds || {}).reduce((s, x) => s + x, 0), 1)} / 100.</p>` : ''}</div>`;
+}
+function reflectHTML(name, rf) { return `<div class="page"><h1>Post-jury reflection · ${esc(name)}</h1><div class="muted">Case 014 · ${new Date().toLocaleDateString()}</div>${Q.reflect.map(([k, l]) => `<h2>${esc(l)}</h2><p>${esc(rf?.[k] || '—')}</p>`).join('')}</div>`; }
+function exportBriefs() { const sc = G.host.scores || {}; download(`case014_${G.sid}_executive_briefs.html`, docShell('Case 014 executive briefs', teamRows().map(t => briefHTML(t.name + (t.demo ? ' (DEMO)' : ''), G.host.answers?.[t.uid], sc[t.uid])).join('')), 'text/html'); }
+function exportReflect() { download(`case014_${G.sid}_reflections.html`, docShell('Case 014 reflections', teamRows().map(t => reflectHTML(t.name + (t.demo ? ' (DEMO)' : ''), G.host.reflect?.[t.uid])).join('') || '<p>No reflections yet.</p>'), 'text/html'); }
+function exportAudit() { download(`case014_${G.sid}_audit.csv`, csv([['time', 'entry'], ...Object.values(G.host.audit || {}).sort((a, b) => a.at - b.at).map(a => [new Date(a.at).toISOString(), a.text])]), 'text/csv'); }
+
+// ---------- demo seeding (demo mode only; written directly, labelled DEMO) ----------
+function seedDemo() {
+  if (DB.mode !== 'demo') return;
+  const now = DB.now(), mk = (v, text = '') => ({ v, text, at: now, rev: 1, late: false });
+  const teams = [
+    ['demo-sample-1', 'DEMO Seed Sleuths', '🧫', { r1: { lead: mk({ lead: 'inoc', sel: ['inoc', 'feed'], conf: 3 }), why: mk('a', 'Seed age moved when yield moved.') }, r2: { a1: mk('inoc'), a2: mk('B007'), b1: mk('feed'), b2: mk('a'), c1: mk({ sensor: 'Measurement', feed: 'Method', inoc: 'Material', staff: 'Manpower' }), d1: mk('no'), d2: mk('inoc'), d3: mk('a') }, r3: { primary: mk('inoc', 'Trend plus controlled comparison.'), extra: mk(['feed']), ev: mk('a'), alt: mk('a', 'Unlogged media change possible.'), conf: mk(4), act: mk('a'), met: mk('a') }, r4: { plan: mk({ ids: ['seed', 'qc', 'feed'] }, 'Fix the cause, then tighten feed.') } }],
+    ['demo-sample-2', 'DEMO Night Watch', '🌙', { r1: { lead: mk({ lead: 'shift', sel: ['shift', 'feed'], conf: 5 }), why: mk('c', 'Worst batches are at night.') }, r2: { a1: mk('feed'), a2: mk('B010'), b1: mk('feed'), b2: mk('b'), c1: mk({ sensor: 'Machine', feed: 'Manpower', inoc: 'Method', staff: 'Manpower' }), d1: mk('yes'), d2: mk('skill'), d3: mk('d') }, r3: { primary: mk('shift', 'Night shift is worse.'), extra: mk(['feed']), ev: mk('d'), alt: mk('d'), conf: mk(5), act: mk('b'), met: mk('b') }, r4: { plan: mk({ ids: ['night', 'feed', 'qc'] }) } }],
+    ['demo-sample-3', 'DEMO Yield Maximisers', '📊', { r1: { lead: mk({ lead: 'dsp', sel: ['dsp', 'inoc'], conf: 2 }), why: mk('b', 'Lots of filter work.') }, r2: { a1: mk('inoc'), a2: mk('B008'), b1: mk('feed'), b2: mk('e'), c1: mk({ sensor: 'Measurement', feed: 'Method', inoc: 'Method', staff: 'Environment' }), d1: mk('no'), d2: mk('feed'), d3: mk('a') }, r3: { primary: mk('inoc'), extra: mk([]), ev: mk('b'), alt: mk('b'), conf: mk(3), act: mk('a'), met: mk('d') }, r4: { plan: mk({ ids: ['seed', 'pool'] }) } }]
+  ];
+  for (const [uid, name, icon, A] of teams) { DB.write(P('teams', uid), { name, icon, members: 'Sample data', joinedAt: now, demo: true }); DB.write(P('names', normName(name)), uid); DB.write(P('answers', uid), A); }
+  DB.write(P('audit', 'seed' + now), { at: now, text: 'Added 3 DEMO sample teams' }); DB.commit(); toast('Added 3 DEMO teams');
+}
+
+/* ===================== CASE 014 APP: events ===================== */
+document.addEventListener('submit', e => { if (e.target.id === 'joinForm') { e.preventDefault(); doJoin(); } });
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const a = t.dataset.act, d = t.dataset;
+  const H = G.host;
+  switch (a) {
+    case 'goHost': e.preventDefault(); location.hash = 'host'; return;
+    case 'goHome': e.preventDefault(); history.replaceState(null, '', location.pathname); location.reload(); return;
+    case 'inspect': G.view.inspect = { ...(G.view.inspect || {}), [d.id]: !(G.view.inspect || {})[d.id] }; break;
+    case 'station': G.view.station = d.s; break;
+    case 'batch': G.view.batch = d.id; break;
+    case 'aVar': G.view.aVar = d.k; break;
+    case 'submit': await submitAnswers(d.r, d.qs.split(',')); break;
+    case 'saveReflect': {
+      const o = { at: DB.now() }; Q.reflect.forEach(([k]) => o[k] = ($('#rf_' + k)?.value || '').trim());
+      try { await DB.set(P('reflect', DB.uid), o); Q.reflect.forEach(([k]) => delete G.draft['rf.' + k]); toast('Reflection saved'); } catch (er) { toast(er.message, true); } break;
+    }
+    case 'myBrief': download(`case014_${normName(G.me.name)}_brief.html`, docShell('Executive brief', briefHTML(G.me.name, G.myAns, G.myRes ? { rounds: G.myRes.rounds } : null)), 'text/html'); return;
+    case 'myReflect': download(`case014_${normName(G.me.name)}_reflection.html`, docShell('Reflection', reflectHTML(G.me.name, G.myReflect)), 'text/html'); return;
+    case 'hostCreate': await hostCreate(); return;
+    case 'hostResume': await hostResume(); return;
+    case 'unlock': try { H.K = await unlockKey($('#h_pass').value); scheduleScore(); } catch (er) { toast('Wrong passphrase', true); } break;
+    case 'saveCfg': { const c = cfgFromText($('#h_cfg').value); if (!c) { G.view.hostErr = 'That does not look like a Firebase config with apiKey, databaseURL and projectId.'; break; } LS.set('case014-fbcfg', encCfg(c)); location.reload(); return; }
+    case 'clearCfg': LS.set('case014-fbcfg', null); history.replaceState(null, '', location.pathname + '#host'); location.reload(); return;
+    case 'copyLink': copy(joinURL(G.sid)); return;
+    case 'endSession': await setState({ phase: 'ended', ...Object.fromEntries(ROUNDS.filter(r => G.state.rounds?.[r]?.status === 'open' || G.state.rounds?.[r]?.status === 'paused').map(r => [`rounds/${r}/status`, 'closed'])) }, 'Session ended'); scheduleScore(); break;
+    case 'reopen': await setState({ phase: 'lobby' }, 'Session reopened'); break;
+    case 'open': await openRound(d.r); break;
+    case 'close': await closeRound(d.r); break;
+    case 'pause': await pauseRound(d.r); break;
+    case 'extend': await extendRound(d.r); break;
+    case 'reveal': await revealRound(d.r); break;
+    case 'finalize': { const rows = SCORE.rank(Object.values(computeAll())).map(t => ({ uid: t.uid, rank: t.rank, name: t.name, icon: t.icon, total: t.total, r1: t.rounds.r1, r2: t.rounds.r2, r3: t.rounds.r3, r4: t.rounds.r4, correct: t.correct, reasoning: t.reasoning, intervention: t.intervention, status: t.status })); await setState({ finalized: true, finalSnapshot: rows }, 'Scores finalised'); scheduleScore(); break; }
+    case 'adjust': await saveAdjust(d.uid, d.q); return;
+    case 'unadjust': await clearAdjust(d.uid, d.q); return;
+    case 'exp': ({ answers: exportAnswers, results: exportResults, log: exportLog, briefs: exportBriefs, reflect: exportReflect, audit: exportAudit })[d.k](); return;
+    case 'seedDemo': seedDemo(); return;
+    case 'wipeDemo': if (DB.mode === 'demo') { DB.reset(); LS.set('case014-host-sid', null); location.hash = 'host'; location.reload(); } return;
+    default: return;
+  }
+  render();
+});
+document.addEventListener('change', async e => {
+  const t = e.target, d = t.dataset;
+  if (d.draft) { G.draft[d.draft] = t.value; return render(); }
+  if (d.draftnum) { G.draft[d.draftnum] = +t.value; return render(); }
+  if (d.sel || d.lead || d.conf) {
+    const v = { ...(dval('r1', 'lead', {}) || {}) }; v.sel = [...(v.sel || [])];
+    if (d.sel) { v.sel = t.checked ? [...new Set([...v.sel, d.sel])] : v.sel.filter(x => x !== d.sel); }
+    if (d.lead) { v.lead = d.lead; if (!v.sel.includes(d.lead)) v.sel.push(d.lead); }
+    if (d.conf) v.conf = +d.conf;
+    G.draft['r1.lead'] = v; return render();
+  }
+  if (d.multi) { const [r, q] = d.multi.split('.'), lim = Q.byId[q].limit || 99; let v = [...(dval(r, q, []) || [])]; v = t.checked ? [...new Set([...v, t.value])] : v.filter(x => x !== t.value); if (v.length > lim) { toast(`Choose at most ${lim}.`, true); t.checked = false; return; } G.draft[d.multi] = v; return render(); }
+  if (d.fish) { const v = { ...(dval('r2', 'c1', {}) || {}) }; if (t.value) v[d.fish] = t.value; else delete v[d.fish]; G.draft['r2.c1'] = v; return render(); }
+  if (d.iv) { const v = dval('r4', 'plan', { ids: [] }) || { ids: [] }; const ids = t.checked ? [...new Set([...(v.ids || []), d.iv])] : (v.ids || []).filter(x => x !== d.iv); G.draft['r4.plan'] = { ids }; return render(); }
+  if (d.view) { const n = +t.value; if (!isFinite(n) || n < 12 || n > 36) { toast('Enter an age between 12 and 36 h.', true); return render(); } G.view[d.view] = n; return render(); }
+  if (d.state) { await setState({ [d.state]: t.type === 'checkbox' ? t.checked : t.value }, `Set ${d.state} = ${t.type === 'checkbox' ? t.checked : t.value}`); scheduleScore(); return; }
+  if (d.release) { await setState({ [`released/${d.release}`]: t.checked }, `${t.checked ? 'Released' : 'Withdrew'} evidence ${d.release.toUpperCase()}`); return; }
+  if (d.insp) { G.host.insp[d.insp] = t.value; if (d.insp === 'r') G.host.insp.q = Q.inRound(t.value)[0].id; return render(); }
+  if (t.id === 'autoClose') { G.host.autoClose = t.checked; return; }
+  if (t.name === 'j_icon') { G.view.icon = t.value; return; }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.draftt) G.draft[t.dataset.draftt + '.t'] = t.value;
+  if (t.dataset.rf) G.draft['rf.' + t.dataset.rf] = t.value;
+  if (t.id && t.matches('input[type=text],input[type=number],input[type=password],textarea') && !t.dataset.draftt && !t.dataset.rf && !t.readOnly) G.dirty[t.id] = t.value;
+  if (t.id === 'j_code') G.view.code = t.value.toUpperCase();
+  if (t.id === 'j_name') G.view.name = t.value;
+  if (t.id === 'j_members') G.view.members = t.value;
+});
+document.addEventListener('focusout', async e => {
+  if (e.target.id === 'j_code' && G.role === 'home') { const c = e.target.value.trim().toUpperCase(); if (/^[A-Z0-9]{6}$/.test(c) && c !== G.sid) { G.view.code = c; await peek(c); render(); } }
+});
+window.addEventListener('hashchange', () => location.reload());
+window.CASE014 = { G, get DB() { return DB; }, SCORE, CASE, Q };
+boot();
+</script>
+</body>
+</html>
