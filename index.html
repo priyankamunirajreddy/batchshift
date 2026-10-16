@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BatchShift Control Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: control-room shell. Sticky plant header, tab rail, main work surface + side instrument column. Dark-first. */
+:root{
+  --bg:#0f161b; --panel:#162028; --panel2:#1c2832; --line:#2b3a46; --fg:#dde6ec; --muted:#8c9eab;
+  --accent:#4cb3c4; --accent-ink:#06232a; --alarm:#f0a13a; --good:#5fbf80; --bad:#e46b58; --violet:#a893e0;
+  --c1:var(--accent); --c2:var(--alarm); --c3:var(--violet); --c4:var(--good);
+  --grid:rgba(140,158,171,.16); --glow:rgba(76,179,196,.18); --paper:#f7f9fa; --paper-ink:#16222b;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:6px; color-scheme:dark;
+}
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+  --bg:#eaeff2; --panel:#ffffff; --panel2:#f3f6f8; --line:#c8d3da; --fg:#14212a; --muted:#566874;
+  --accent:#167a8c; --accent-ink:#ffffff; --alarm:#b76a08; --good:#2b8a4d; --bad:#bf412e; --violet:#6b52b8;
+  --grid:rgba(86,104,116,.16); --glow:rgba(22,122,140,.12); color-scheme:light } }
+:root[data-theme="light"]{
+  --bg:#eaeff2; --panel:#ffffff; --panel2:#f3f6f8; --line:#c8d3da; --fg:#14212a; --muted:#566874;
+  --accent:#167a8c; --accent-ink:#ffffff; --alarm:#b76a08; --good:#2b8a4d; --bad:#bf412e; --violet:#6b52b8;
+  --grid:rgba(86,104,116,.16); --glow:rgba(22,122,140,.12); color-scheme:light }
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--fg);font:15px/1.5 var(--f-body);padding-inline:16px;padding-block:0 48px}
+h1,h2,h3,h4{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;line-height:1.1;text-wrap:balance;margin:0}
+h2{font-size:1.75rem} h3{font-size:1.3rem} h4{font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+p{margin:0} .muted{color:var(--muted)} .mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.small{font-size:.85rem} .tiny{font-size:.75rem}
+.label{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+a{color:var(--accent)}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--alarm);outline-offset:2px}
+.wrap{max-width:1320px;margin:0 auto}
+.stack{display:flex;flex-direction:column;gap:14px} .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.grid2>*,.grid3>*,.main>*{min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.panel.flat{background:var(--panel2)}
+.btn{border:1px solid var(--line);background:var(--panel2);padding:8px 14px;border-radius:4px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.warn{border-color:var(--alarm);color:var(--alarm)}
+.btn.sm{padding:4px 10px;font-size:.85rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input[type=text],input[type=number],select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:7px 9px;width:100%}
+textarea{min-height:70px;resize:vertical}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.field{display:flex;flex-direction:column;gap:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);border-radius:3px;padding:2px 7px;white-space:nowrap}
+.chip.good{color:var(--good);border-color:currentColor} .chip.bad{color:var(--bad);border-color:currentColor} .chip.warn{color:var(--alarm);border-color:currentColor} .chip.acc{color:var(--accent);border-color:currentColor}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+.know{border:1px solid var(--line);background:transparent;color:var(--accent);width:22px;height:22px;border-radius:50%;font:600 .75rem var(--f-mono);padding:0;flex:none}
+.know:hover{background:var(--glow)}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.note{border-left:3px solid var(--alarm);padding:8px 12px;background:var(--panel2);font-size:.88rem}
+.note.info{border-color:var(--accent)}
+.tag-syn::before{content:"SYNTHETIC";font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;color:var(--violet);border:1px solid currentColor;padding:0 4px;margin-right:6px;border-radius:2px}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-16px;padding:10px 16px 0}
+.top .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;max-width:1320px;margin:0 auto}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand b{font:700 1.45rem var(--f-display);letter-spacing:.04em}
+.brand span{font-family:var(--f-mono);font-size:.72rem;color:var(--alarm);letter-spacing:.1em}
+.meters{display:flex;gap:16px;flex-wrap:wrap;margin-left:auto;align-items:center}
+.meter{display:flex;flex-direction:column;line-height:1.15}
+.meter .v{font:500 1rem var(--f-mono);font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:2px;overflow-x:auto;max-width:1320px;margin:8px auto 0;scrollbar-width:thin}
+.tab{border:none;background:none;padding:8px 12px;border-bottom:2px solid transparent;color:var(--muted);font:600 .95rem var(--f-display);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--fg);border-color:var(--accent)}
+.tab:disabled{opacity:.35;cursor:not-allowed}
+.tab .lock{font-size:.7rem;margin-left:4px}
+main{max-width:1320px;margin:18px auto 0}
+
+/* Intro */
+.alert{position:relative;overflow:hidden;border:1px solid var(--alarm);border-radius:var(--r);background:var(--panel)}
+.alert .plant{display:block;width:100%;height:auto;max-height:240px}
+.alert .body{padding:20px;display:flex;flex-direction:column;gap:16px}
+.alert-head{font:700 clamp(1.8rem,4.5vw,3.2rem)/1 var(--f-display);letter-spacing:.02em}
+.alert-msg{font-family:var(--f-mono);font-size:.95rem;border:1px dashed var(--alarm);padding:12px 14px;color:var(--fg);max-width:75ch}
+.ind{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ind>div{border:1px solid var(--line);padding:10px 12px;border-radius:4px;background:var(--panel2)}
+.ind .v{font:600 1.7rem var(--f-display)}
+.beacon{animation:beacon 1.4s steps(2,end) infinite}
+@keyframes beacon{50%{opacity:.25}}
+.steps-dots{display:flex;gap:6px}.steps-dots i{width:22px;height:4px;background:var(--line)}.steps-dots i.on{background:var(--alarm)}
+
+/* Control room */
+.cr{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+@media (max-width:980px){.cr{grid-template-columns:1fr}}
+.line{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;position:relative}
+@media (max-width:720px){.line{grid-template-columns:1fr;gap:8px}.pipe{display:none}}
+.stage{position:relative;padding:12px 10px;border:1px solid var(--line);background:var(--panel2);margin:0 10px;border-radius:4px;display:flex;flex-direction:column;gap:6px;min-height:150px}
+.stage.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.stage.done{border-style:solid;opacity:.95}
+.stage.todo{opacity:.6}
+.stage svg{width:42px;height:42px}
+.stage .st-n{font:600 1.05rem var(--f-display);letter-spacing:.04em;text-transform:uppercase}
+.stage .kv{font-family:var(--f-mono);font-size:.74rem;display:grid;grid-template-columns:auto auto;justify-content:space-between;gap:0 8px}
+.pipe{position:absolute;top:50%;right:-11px;width:12px;height:4px;background:var(--line)}
+.stage.done .pipe{background:var(--accent)}
+.flow{position:absolute;left:0;top:0;height:3px;background:var(--accent);animation:flow 2s linear infinite;width:30%}
+@keyframes flow{from{left:0}to{left:70%}}
+.ctrl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.ctrl:last-child{border-bottom:none}
+.ctrl .nm{display:flex;gap:8px;align-items:center;font-weight:500}
+.ctrl .val{font:500 1rem var(--f-mono);text-align:right}
+.ctrl .full{grid-column:1/-1}
+.ctrl .ivtag{font-size:.75rem;color:var(--muted)}
+.ctrl.changed .val{color:var(--alarm)}
+.status .s{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
+.status .s:last-child{border:none}
+.status .big{font:600 1.6rem var(--f-display)}
+.ev{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.ev:last-child{border:none}
+.ev .t{font-weight:500}
+.ev.own .t::after{content:" \2713";color:var(--good)}
+
+/* Domino */
+.dom{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:stretch}
+@media (max-width:820px){.dom{grid-template-columns:1fr}}
+.dnode{border:1px solid var(--line);background:var(--panel2);padding:12px;margin:0 14px;position:relative;border-radius:4px;opacity:1}
+.dnode.anim{animation:lit .5s ease both}
+@keyframes lit{from{opacity:.25;transform:translateY(6px)}to{opacity:1;transform:none}}
+.dnode h4{color:var(--accent)}
+.dnode .arrow{position:absolute;right:-22px;top:40%;font:600 1.4rem var(--f-display);color:var(--accent)}
+@media (max-width:820px){.dnode{margin:0 0 18px}.dnode .arrow{right:auto;left:50%;top:auto;bottom:-24px;transform:rotate(90deg)}}
+.eq{font-family:var(--f-mono);font-size:.82rem;background:var(--panel2);border:1px solid var(--line);padding:10px 12px;border-radius:4px;white-space:pre-wrap;overflow-x:auto}
+
+/* Charts */
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:11px var(--f-mono)}
+.chart .ttl{fill:var(--fg);font:600 13px var(--f-body)}
+.chart .gl{stroke:var(--grid)}
+.chart .ax{stroke:var(--line)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem}
+.legend span::before{content:"";display:inline-block;width:12px;height:3px;background:var(--lc);margin-right:6px;vertical-align:middle}
+
+/* Fishbone */
+.fish{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 120px;grid-template-rows:auto 44px auto;gap:10px}
+.bone{border-left:2px solid var(--accent);padding:6px 10px;display:flex;flex-direction:column;gap:6px;min-height:90px}
+.spine{grid-column:1/4;grid-row:2;align-self:center;height:4px;background:var(--accent);position:relative}
+.head{grid-column:4;grid-row:1/4;align-self:center;border:2px solid var(--alarm);padding:10px;font:600 1rem var(--f-display);text-align:center;border-radius:0 40px 40px 0}
+@media (max-width:720px){.fish{grid-template-columns:1fr;grid-template-rows:none}.spine{display:none}.head{grid-column:auto;grid-row:auto;border-radius:4px}.bone.top,.bone.bot{transform:none}}
+.cause{font-size:.8rem;border:1px solid var(--line);background:var(--panel2);padding:4px 6px;border-radius:3px;display:flex;flex-direction:column;gap:2px}
+
+/* Drawer + modal */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,100vw);background:var(--panel);border-left:1px solid var(--line);z-index:41;overflow-y:auto;padding:20px;padding-top:calc(20px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:16px}
+.drawer.left{right:auto;left:0;border-left:none;border-right:1px solid var(--line);width:min(460px,100vw)}
+details{border:1px solid var(--line);border-radius:4px;padding:8px 12px;background:var(--panel2)}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:8px}
+.toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:4px;z-index:60;font-size:.9rem}
+
+/* Paper (reports) */
+.paper{background:var(--paper);color:var(--paper-ink);padding:28px;border-radius:2px;max-width:860px;font-size:.9rem}
+.paper h2,.paper h3{color:var(--paper-ink)} .paper th{color:#56656f} .paper td,.paper th{border-color:#d3dbe0}
+.paper .muted{color:#56656f}
+
+/* Facilitator projector */
+.proj .clock{font:700 clamp(3rem,10vw,7rem)/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px}
+.phase{border:1px solid var(--line);padding:8px;border-radius:4px;font-size:.82rem}
+.phase.on{border-color:var(--alarm);background:var(--panel2)}
+.phase.past{opacity:.5}
+.lb td{font-size:.95rem}
+.lb tr.top1 td{color:var(--alarm)}
+body.projector{font-size:18px}
+.bar-h{height:8px;background:var(--line);border-radius:2px;overflow:hidden}.bar-h>i{display:block;height:100%;background:var(--accent)}
+
+/* ---- Phase 1 additions ---- */
+h1{font-size:clamp(1.9rem,4vw,2.8rem);font-weight:700;letter-spacing:.01em}
+.h4{font:600 1.05rem var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.sb{justify-content:space-between}
+.top .bar .sc-pick{display:flex;flex-direction:column;gap:2px;min-width:200px}
+.top .bar .sc-pick select{padding:4px 8px}
+main{display:flex;flex-direction:column;gap:18px}
+.dmaic{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.dmaic li{border-top:3px solid var(--line);padding:6px 8px 0;display:flex;flex-direction:column;gap:2px;font-size:.78rem;color:var(--muted);min-width:0}
+.dmaic li b{font:600 1rem var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--fg)}
+.dmaic li.done{border-color:var(--good)} .dmaic li.active{border-color:var(--alarm)} .dmaic li.later b{color:var(--muted)}
+.dmaic li.later span::before{content:"";}
+@media (max-width:640px){.dmaic{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.define{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:end;border-color:var(--alarm)}
+@media (max-width:820px){.define{grid-template-columns:1fr}}
+.lede{max-width:68ch;font-size:1rem}
+.calc{border:1px dashed var(--alarm);padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.eqline{font-size:1.15rem}
+.hypform{border-color:var(--accent)}
+.tipbtn{border:1px solid var(--line);background:transparent;color:var(--accent);width:22px;height:22px;border-radius:50%;font:600 .75rem var(--f-mono);padding:0;flex:none}
+.tipbtn:hover,.tipbtn[aria-expanded="true"]{background:var(--glow)}
+.tip{font-size:.82rem;background:var(--panel2);border-left:3px solid var(--accent);padding:6px 10px;margin:4px 0}
+.slider{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:10px;align-items:center}
+.slider input[type=number]{padding:4px 6px;font-family:var(--f-mono)}
+.obs{border-left:3px solid var(--violet);padding:6px 12px;background:var(--panel2);font-size:.92rem}
+.linkbtn{background:none;border:none;padding:0;color:var(--accent);text-decoration:underline;font:inherit}
+.confirm{position:fixed;z-index:42;top:22%;left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tile .tv{font:600 2.2rem/1.1 var(--f-display)} .tile .tv small{font:400 .9rem var(--f-body);color:var(--muted)}
+.status .big small{font:400 .8rem var(--f-body);color:var(--muted)}
+#results{scroll-margin-top:120px}
+details.panel summary{font-weight:600}
+a.btn{text-decoration:none;color:inherit;display:inline-block}
+@media (max-width:720px){.top{position:static}.stage{min-height:0;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;margin:0}.stage svg{width:28px;height:28px}.stage .kv{flex-basis:100%}.stage .row.sb{flex-basis:100%}.meters{margin-left:0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<header class="top" id="top"></header>
+<main id="main"></main>
+<div id="overlay"></div>
+<script>/* ===================== BATCHSHIFT SIMULATION ENGINE =====================
+   Pure functions only: no DOM access. All data synthetic (educational).   */
+const ENGINE = (() => {
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  function rng(seed) {
+    let s = seed >>> 0;
+    return function () {
+      s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function normal(r) { let u = 0; while (u === 0) u = r(); const v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  // ---- Assumed coefficients (educational, not validated) ----
+  const C = {
+    Y0: 5.00,      // baseline final yield, g/L (synthetic historical mean, batches 001-006)
+    Ycur: 4.30,    // current final yield, g/L (synthetic historical mean, batches 019-024)
+    kA: 0.0010, Aopt: 18,       // inoculum fitness curvature (1/h^2), optimum age (h)
+    kF: 0.0012,                 // titer loss per minute of feed-timing deviation
+    kD: 0.0015,                 // exponential titer loss per minute of true low-DO time
+    Sref: 0.97,                 // sensor reliability above which no hidden excursion accumulates
+    L0: 0.030, lD: 0.0005, lF: 0.0003, // lysis fraction model
+    H0: 0.95, hL: 1.2,          // harvest (clarification) efficiency and sensitivity to lysis
+    saD: 0.0012, saA: 0.003, Aact: 22, saPool: 1.2, Rpool: 0.90, // specific activity model
+    SAtarget: 95                // educational activity target, U/mg (assumption, not a spec)
+  };
+  const BASE = { A: 18, F: 4, D: 8, M: 1, S: 0.97, R: 0.88, train: false, qc: false };
+  const fI = A => Math.max(0.5, 1 - C.kA * (A - C.Aopt) ** 2);
+  const Lb = C.L0 + C.lD * BASE.D + C.lF * BASE.F;
+  const T0 = C.Y0 / (fI(BASE.A) * (1 - C.kF * BASE.F) * Math.exp(-C.kD * BASE.D) * C.H0 * BASE.R);
+  const ZERO = { d: 0, f: 0, r: 0, e: 0, a: 0 };
+
+  // The domino chain: operating condition -> intermediate state -> harvest -> recovery -> final
+  function chain(p, kappa, dist = ZERO) {
+    const inoc = fI(p.A);
+    const Ft = Math.max(0, p.F + dist.f);
+    const Dm = Math.max(0, p.D + dist.d);                         // sensor-reported
+    const hidden = Math.max(0, C.Sref - p.S) * kappa;              // unseen low-DO minutes
+    const Dt = Dm + hidden;                                        // true low-DO minutes
+    const fF = 1 - C.kF * Ft, fD = Math.exp(-C.kD * Dt);
+    const T = T0 * inoc * fF * fD;
+    const L = C.L0 + C.lD * Dt + C.lF * Ft;
+    const H = clamp(C.H0 - C.hL * (L - Lb), 0.5, 0.99);
+    const Reff = clamp(p.R + dist.r, 0.5, 0.99);
+    const harvested = T * H;
+    const Y = harvested * Reff * (1 + dist.e);
+    const sD = 1 - C.saD * (Dt - BASE.D), sA = 1 - C.saA * Math.max(0, p.A - C.Aact), sP = 1 - C.saPool * Math.max(0, p.R - C.Rpool);
+    const SA = Math.min(105, 100 * sD * sA * sP * (1 + dist.a));
+    return { inoc, Ft, Dm, hidden, Dt, fF, fD, T, L, H, Reff, harvested, Y, SA, sD, sA, sP, dist };
+  }
+
+  // ---- Scenarios ----
+  const SCEN = {
+    drift: {
+      id: 'drift', n: 1, name: 'Hidden Drift', seed: 1401, kappa: 60,
+      cur: { A: null, F: 6, D: 9, M: 1, S: 0.96, R: 0.88, train: false, qc: false },
+      solve: 'A', lo: 18, hi: 36, ramp: ['A'], feedSpike: 0.8, doSpike: 0.10, cal: 'cycle', resin: 'cycle',
+      blurb: 'Yield has slid gradually over months. Nothing alarming happened on any single day.',
+      key: { factor: 'A', partial: [], cats: ['Method', 'Material'], evidence: ['inoc', 'hist'],
+        answer: 'Seed-train scheduling drift: inoculum age at transfer crept from about 18 h to about 29 h after a shift-pattern change (batch 007 onward). Older inoculum lowers relative seed fitness in this model, which lowers titer. Harvest and recovery are unaffected. Feed-timing deviations are the most frequent event but contribute little loss, and their frequency did not change when yield fell.' },
+      notes: {
+        hist: 'Titer fell in step with final yield, while harvest and recovery efficiencies held near baseline. The loss appears to originate upstream of harvest.',
+        do: 'Logged DO excursions stay short (around 9 min per batch) across all 24 batches, with no trend.',
+        feed: 'Feed-timing deviations above 10 min occurred in roughly half of all batches, both before and after the decline began. Their frequency did not change when yield fell.',
+        inoc: 'Seed-train transfer age has crept from about 18 h to about 29 h since batch 007, coinciding with a change in the shift pattern (synthetic record).',
+        cal: 'DO probe calibrated on its 30-day schedule. The off-gas oxygen balance agrees with probe readings within a few minutes.',
+        dsp: 'Chromatography step yield stable near 0.88; resin replaced on schedule. Clarification turbidity unchanged.',
+        qc: 'Specific activity is slightly lower and noticeably more scattered in recent batches.'
+      }
+    },
+    trap: {
+      id: 'trap', n: 2, name: 'The Measurement Trap', seed: 2402, kappa: null,
+      cur: { A: 18.5, F: 5, D: 8, M: 1, S: 0.62, R: 0.88, train: false, qc: false },
+      solve: 'kappa', lo: 0, hi: 1200, ramp: ['S'], feedSpike: 0.15, doSpike: 0.05, cal: 'overdue', resin: 'cycle',
+      blurb: 'The control system says the fermentation is fine. The product says otherwise.',
+      key: { factor: 'S', partial: ['D'], cats: ['Measurement'], evidence: ['cal', 'qc'],
+        answer: 'Measurement failure: the DO probe replaced at batch 007 has not been recalibrated, so it reads high. The controller believes DO is in range while the culture actually spends about an hour per batch oxygen-limited. That hidden excursion lowers titer and activity, and the extra cell lysis lowers harvest efficiency one stage later (delayed effect). Tightening DO control alone does little, because the controller acts on the faulty signal.' },
+      notes: {
+        hist: 'Titer and harvest efficiency both declined, while recovery step yield is stable. Both fermentation and harvest are involved.',
+        do: 'Sensor-reported DO excursions look normal and flat (about 8 min per batch). These are the probe’s own readings.',
+        feed: 'Feed timing is within normal limits; occasional deviations show no trend.',
+        inoc: 'Inoculum age at transfer stable at 18–19 h.',
+        cal: 'DO probe replaced at batch 007; no calibration since (days since calibration now far past the 30-day policy). The off-gas oxygen balance implies roughly 70 min of low-DO time per batch, far longer than the probe reports.',
+        dsp: 'Chromatography step yield stable. Clarification turbidity (a lysis proxy) has risen, and harvest efficiency has fallen with it.',
+        qc: 'Specific activity is down about 8% from baseline. In this simulation’s assumptions, oxygen-limited production lowers activity.'
+      }
+    },
+    shock: {
+      id: 'shock', n: 3, name: 'Recovery Shock', seed: 3403, kappa: 60,
+      cur: { A: 18, F: 5, D: 14, M: 1, S: 0.97, R: null, train: false, qc: false },
+      solve: 'R', lo: 0.6, hi: 0.88, ramp: ['R', 'D'], feedSpike: 0.15, doSpike: 0.8, cal: 'cycle', resin: 'aging',
+      blurb: 'Fermentation alarms keep going off. Is that really where the product goes?',
+      key: { factor: 'R', partial: [], cats: ['Machine', 'Material'], evidence: ['dsp', 'hist'],
+        answer: 'Downstream recovery loss: chromatography resin has been used well past its effective life, and step yield drifted from 0.88 to about 0.76. Titer is near baseline. The frequent DO alarms are real but short and were equally common in the high-yield baseline batches, so they are not the main cause. Pushing recovery above 0.90 by widening fraction pooling raises quantity but lowers specific activity.' },
+      notes: {
+        hist: 'Titer stayed near baseline throughout. The loss appears after harvest.',
+        do: 'DO alarms of 10–25 min occur in about half of all batches, including the baseline batches that had normal yield.',
+        feed: 'Feed timing within normal limits; no trend.',
+        inoc: 'Inoculum age at transfer stable near 18 h.',
+        cal: 'DO probe calibrated on schedule; off-gas oxygen balance agrees with the probe.',
+        dsp: 'Chromatography step yield drifted from 0.88 to about 0.76 as resin cycle count rose past about 100 (synthetic). Harvest efficiency unchanged.',
+        qc: 'Specific activity stable near baseline. Quantity is lost, not activity.'
+      }
+    }
+  };
+
+  function bisect(fn, lo, hi, target) {
+    let flo = fn(lo) - target;
+    for (let i = 0; i < 80; i++) {
+      const mid = (lo + hi) / 2, fm = fn(mid) - target;
+      if ((fm > 0) === (flo > 0)) { lo = mid; flo = fm; } else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+  for (const sc of Object.values(SCEN)) {
+    if (sc.solve === 'kappa') sc.kappa = bisect(k => chain(sc.cur, k).Y, sc.lo, sc.hi, C.Ycur);
+    else sc.cur[sc.solve] = bisect(v => chain({ ...sc.cur, [sc.solve]: v }, sc.kappa).Y, sc.lo, sc.hi, C.Ycur);
+  }
+
+  // ---- Synthetic history: 24 batches, baseline window 1-6, ramp 7-18, current window 19-24 ----
+  const HIST_VARS = {
+    batch: { label: 'Batch', unit: '' },
+    A: { label: 'Inoculum age', unit: 'h', ev: 'inoc', d: 1 },
+    F: { label: 'Feed-timing deviation', unit: 'min', ev: 'feed', d: 0 },
+    Dm: { label: 'DO excursion (probe)', unit: 'min', ev: 'do', d: 0 },
+    calDays: { label: 'Days since DO calibration', unit: 'd', ev: 'cal', d: 0 },
+    Doff: { label: 'Low-DO time (off-gas est.)', unit: 'min', ev: 'cal', d: 0 },
+    titer: { label: 'Fermentation titer', unit: 'g/L', ev: 'hist', d: 2 },
+    lysis: { label: 'Lysis fraction (turbidity proxy)', unit: 'fraction', ev: 'dsp', d: 3 },
+    H: { label: 'Harvest efficiency', unit: 'fraction', ev: 'dsp', d: 3 },
+    resin: { label: 'Resin cycles', unit: 'cycles', ev: 'dsp', d: 0 },
+    R: { label: 'Recovery step yield', unit: 'fraction', ev: 'dsp', d: 3 },
+    Y: { label: 'Final yield', unit: 'g/L', ev: null, d: 3 },
+    SA: { label: 'Specific activity', unit: 'U/mg', ev: 'qc', d: 1 }
+  };
+  const histCache = {};
+  function history(id) {
+    if (histCache[id]) return histCache[id];
+    const sc = SCEN[id], r = rng(sc.seed), rows = [];
+    for (let i = 0; i < 24; i++) {
+      const w = i < 6 ? 0 : i < 18 ? (i - 5) / 13 : 1;
+      const p = { ...BASE };
+      for (const k of ['A', 'F', 'D', 'S', 'R']) p[k] = BASE[k] + (sc.cur[k] - BASE[k]) * (sc.ramp.includes(k) ? w : (i < 6 ? 0 : 1));
+      p.A = Math.max(12, p.A + normal(r) * 0.6);
+      p.F = Math.max(0, p.F + normal(r) * 1.5 + (r() < sc.feedSpike ? 10 + r() * 12 : 0));
+      p.D = Math.max(0, p.D + normal(r) * 1.5 + (r() < sc.doSpike ? 10 + r() * 15 : 0));
+      p.R = p.R + normal(r) * 0.006;
+      const dist = { d: 0, f: 0, r: 0, e: normal(r) * 0.012, a: normal(r) * 0.015 * (1 + 0.15 * Math.max(0, p.A - C.Aact)) };
+      const c = chain(p, sc.kappa, dist);
+      const calDays = sc.cal === 'overdue' ? (i < 6 ? (i * 5) % 30 + 2 : 8 + (i - 6) * 9) : (i * 7) % 30 + 1;
+      const resin = sc.resin === 'aging' ? 20 + i * 6 : (i * 6) % 48 + 6;
+      rows.push({ batch: i + 1, A: p.A, F: c.Ft, Dm: c.Dm, calDays, Doff: Math.max(0, c.Dt + normal(r) * 3), titer: c.T * (1 + normal(r) * 0.01),
+        lysis: c.L, H: c.H, resin, R: c.Reff, Y: c.Y, SA: c.SA, S: p.S });
+    }
+    const norm = {};
+    [[0, 6, C.Y0, 'baseline'], [18, 24, C.Ycur, 'current']].forEach(([a, b, t, nm]) => {
+      const m = rows.slice(a, b).reduce((s, x) => s + x.Y, 0) / (b - a);
+      norm[nm] = t / m;
+      for (let i = a; i < b; i++) rows[i].Y *= t / m;
+    });
+    histCache[id] = { rows, norm };
+    return histCache[id];
+  }
+
+  // ---- Seeded campaign projection (common random numbers => fair comparisons) ----
+  const MSCALE = [1.4, 1.0, 0.65];
+  function dists(id, p) {
+    const r = rng(SCEN[id].seed + 7919), out = [];
+    const mS = MSCALE[p.M ?? 1], tS = p.train ? 0.7 : 1;
+    for (let j = 0; j < 8; j++) {
+      const z = [normal(r), normal(r), normal(r), normal(r), normal(r)];
+      out.push({ d: z[0] * 6 * mS, f: z[1] * 3 * mS, r: z[2] * 0.008 * tS, e: z[3] * 0.012 * tS, a: z[4] * 0.015 * tS * (1 + 0.15 * Math.max(0, p.A - C.Aact)) });
+    }
+    return out;
+  }
+  const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
+
+  // ---- Interventions ----
+  const IV = {
+    inoc_sop: { name: 'Tighten seed-train scheduling', cost: 10, ctrl: 'A', cat: 'Operational', effect: 'Lets you set inoculum age at transfer.', limits: 'Does not touch oxygen, feed or downstream causes.', kpi: 'Inoculum age at transfer (h)' },
+    training: { name: 'SOP consistency training', cost: 10, ctrl: 'train', cat: 'Training', effect: 'Cuts unexplained batch noise and recovery jitter by 30% (model assumption).', limits: 'Does not shift the average if a physical cause remains.', kpi: 'Batch-to-batch CV of yield' },
+    feed_ctrl: { name: 'Improve feed-timing control', cost: 18, ctrl: 'F', cat: 'Operational', effect: 'Lets you reduce feed-timing deviation.', limits: 'Feed timing has a small per-minute effect in this model.', kpi: 'Feed-timing deviation (min)' },
+    do_ctrl: { name: 'Tune oxygen control (aeration/agitation)', cost: 20, ctrl: 'D', cat: 'Operational', effect: 'Lets you reduce the DO excursion the controller sees.', limits: 'The controller can only correct what the probe reports.', kpi: 'Low-DO minutes per batch' },
+    sensor_cal: { name: 'Recalibrate and verify DO probe', cost: 12, ctrl: 'S', cat: 'Measurement', effect: 'Raises sensor reliability, removing unseen low-DO time.', limits: 'No benefit if the probe is already reliable.', kpi: 'Probe vs off-gas agreement' },
+    mon_high: { name: 'High-intensity monitoring', cost: 8, ctrl: 'M', cat: 'Monitoring', effect: 'Shrinks seeded DO and feed disturbances by 35%.', limits: 'Cannot see what a faulty sensor hides.', kpi: 'Disturbance minutes per batch' },
+    dsp_change: { name: 'Re-optimise recovery step (resin/pooling)', cost: 22, ctrl: 'R', cat: 'Recovery', effect: 'Lets you set chromatography step yield.', limits: 'Above 0.90, wider pooling lowers specific activity.', kpi: 'Step yield and specific activity' },
+    qc_targeted: { name: 'Targeted QC measurements', cost: 6, ctrl: 'qc', cat: 'Quality', effect: 'Adds activity testing on every projected batch; lowers quality risk score.', limits: 'Detects problems; does not fix them.', kpi: 'Activity CV, out-of-target count' }
+  };
+  function activeIV(p, cur) {
+    const a = [];
+    if (Math.abs(p.A - cur.A) > 0.25) a.push('inoc_sop');
+    if (p.train) a.push('training');
+    if (Math.abs(p.F - cur.F) > 0.5) a.push('feed_ctrl');
+    if (Math.abs(p.D - cur.D) > 0.5) a.push('do_ctrl');
+    if (Math.abs(p.S - cur.S) > 0.005) a.push('sensor_cal');
+    if (p.M === 2) a.push('mon_high');
+    if (Math.abs(p.R - cur.R) > 0.0025) a.push('dsp_change');
+    if (p.qc) a.push('qc_targeted');
+    return a;
+  }
+  const ivCost = (p, cur) => activeIV(p, cur).reduce((s, k) => s + IV[k].cost, 0);
+
+  function risk(p, c) {
+    let r = 0.25 * c.Dt + 60 * Math.max(0, C.Sref - p.S) + 0.2 * c.Ft + 150 * Math.max(0, p.R - C.Rpool) + Math.abs(p.A - C.Aopt) * 1.0;
+    r += p.M === 0 ? 10 : p.M === 2 ? -5 : 0;
+    if (p.train) r -= 5; if (p.qc) r -= 5;
+    return clamp(r, 0, 100);
+  }
+
+  // Full run: batch 025 (draw 0) + 8-batch projection
+  function simulate(id, p) {
+    const sc = SCEN[id], ds = dists(id, p);
+    const proj = ds.map(d => chain(p, sc.kappa, d));
+    const Ys = proj.map(x => x.Y), SAs = proj.map(x => x.SA);
+    const batch = proj[0], nominal = chain(p, sc.kappa);
+    const Ym = mean(Ys), cost = ivCost(p, sc.cur);
+    return {
+      settings: { ...p }, batch, nominal, proj, Ym, Ysd: sd(Ys), cv: 100 * sd(Ys) / Ym, SAm: mean(SAs), SAsd: sd(SAs),
+      SAcv: 100 * sd(SAs) / mean(SAs), relBase: (Ym - C.Y0) / C.Y0, relCur: (Ym - C.Ycur) / C.Ycur, cost, iv: activeIV(p, sc.cur),
+      risk: risk(p, nominal), belowSA: SAs.filter(x => x < C.SAtarget).length
+    };
+  }
+
+  // Pareto: estimated loss contribution per factor (restore one factor to baseline, others at current)
+  const FACTORS = [
+    { k: 'A', name: 'Inoculum age', ev: 'inoc', cat: 'Method', flag: r => r.A > 22, flagTxt: 'age > 22 h' },
+    { k: 'F', name: 'Feed timing', ev: 'feed', cat: 'Method', flag: r => r.F > 10, flagTxt: 'deviation > 10 min' },
+    { k: 'D', name: 'DO control (as reported)', ev: 'do', cat: 'Machine', flag: r => r.Dm > 15, flagTxt: 'probe excursion > 15 min' },
+    { k: 'S', name: 'DO sensor reliability', ev: 'cal', cat: 'Measurement', flag: r => r.calDays > 30, flagTxt: 'calibration overdue > 30 d' },
+    { k: 'R', name: 'Downstream recovery', ev: 'dsp', cat: 'Machine', flag: r => r.R < 0.84, flagTxt: 'step yield < 0.84' }
+  ];
+  function pareto(id) {
+    const sc = SCEN[id], rows = history(id).rows, Yc = chain(sc.cur, sc.kappa).Y;
+    const items = FACTORS.map(f => {
+      const p = { ...sc.cur, [f.k]: BASE[f.k] };
+      return { ...f, loss: Math.max(0, chain(p, sc.kappa).Y - Yc), freq: rows.filter(f.flag).length };
+    });
+    const total = chain(BASE, sc.kappa).Y - Yc;
+    return { items, total, interaction: total - items.reduce((s, x) => s + x.loss, 0) };
+  }
+
+  return { C, BASE, T0, Lb, SCEN, IV, FACTORS, HIST_VARS, MSCALE, chain, history, simulate, pareto, activeIV, ivCost, risk, rng, normal, mean, sd, clamp, fI };
+})();
+if (typeof module !== 'undefined') module.exports = ENGINE;
+</script>
+<script>/* ===================== BATCHSHIFT PHASE 1 =====================
+   Core features: control room, production timeline, process controls,
+   monitoring credits & evidence, results dashboard.
+   Quantitative reference: BatchShift_Quantitative_Workbook.xlsx (Assumptions + Model sheets).
+   Engine parity with the workbook verified on 20 setting combinations (max diff 1.4e-14). */
+const E = ENGINE;
+const KEY = 'batchshift-p1-v1';
+const MON_BUDGET = 60;   // monitoring credits (app configuration; not defined in the workbook)
+const INT_BUDGET = 60;   // intervention budget (workbook: Interventions sheet, "Intervention budget")
+const TARGET = 4.85;     // educational improvement target (workbook: Baseline!B6)
+const KEYS = ['A', 'F', 'D', 'S', 'M', 'R'];
+const CTRL = {
+  A: { label: 'Inoculum age at transfer', unit: 'h', min: 12, max: 36, step: 0.5, stage: 0, iv: 'inoc_sop', d: 1,
+    tip: 'Hours the seed culture grows before transfer to the fermenter. Model: seed fitness f = max(0.5, 1 − 0.0010·(A − 18)²). Optimum 18 h is a simulation assumption.' },
+  F: { label: 'Feed-timing deviation', unit: 'min', min: 0, max: 60, step: 1, stage: 1, iv: 'feed_ctrl', d: 0,
+    tip: 'Minutes the nutrient feed starts early or late. Model: titer × (1 − 0.0012·F); lysis + 0.0003·F. Small per-minute effect.' },
+  D: { label: 'DO excursion (probe reading)', unit: 'min', min: 4, max: 120, step: 1, stage: 1, iv: 'do_ctrl', d: 0,
+    tip: 'Minutes per batch the dissolved-oxygen probe reports below setpoint. The controller acts on this reading. Model: titer × exp(−0.0015·D_true); lysis + 0.0005·D_true.' },
+  S: { label: 'DO sensor reliability', unit: 'index', min: 0.5, max: 0.99, step: 0.01, stage: 1, iv: 'sensor_cal', d: 2,
+    tip: 'Calibration status of the DO probe (0.5 poor, 0.99 freshly verified). Below 0.97 the probe misses low-DO time: hidden minutes = max(0, 0.97 − S)·κ, where κ is scenario-specific.' },
+  M: { label: 'Monitoring intensity', type: 'select', opts: ['Low', 'Standard', 'High'], stage: 1, iv: 'mon_high',
+    tip: 'Scales random DO and feed disturbances across the 8-batch projection (×1.4 / ×1.0 / ×0.65). Changes variability, not the nominal yield. App assumption, not in the workbook.' },
+  R: { label: 'Chromatography step yield', unit: 'fraction', min: 0.70, max: 0.95, step: 0.005, stage: 3, iv: 'dsp_change', d: 3,
+    tip: 'Fraction of clarified product recovered by the purification step. Final yield = T·H·R. Above 0.90, wider fraction pooling lowers activity by 1.2·(R − 0.90).' }
+};
+const EV = {
+  hist: { name: 'Historical batch comparison', cost: 15, vars: ['titer', 'Y'], cat: 'Method', desc: 'Titer vs final yield, 24 batches.' },
+  do: { name: 'Dissolved oxygen trends', cost: 10, vars: ['Dm'], cat: 'Machine', desc: 'DO excursion minutes as logged by the probe.' },
+  feed: { name: 'Feed-timing deviations', cost: 8, vars: ['F'], cat: 'Method', desc: 'Feed-start deviation per batch.' },
+  inoc: { name: 'Inoculum history', cost: 10, vars: ['A'], cat: 'Material', desc: 'Seed-train age at transfer per batch.' },
+  cal: { name: 'Sensor calibration records', cost: 12, vars: ['calDays', 'Doff'], cat: 'Measurement', desc: 'Calibration log and off-gas oxygen cross-check.' },
+  dsp: { name: 'Downstream recovery measurements', cost: 12, vars: ['lysis', 'H', 'R', 'resin'], cat: 'Machine', desc: 'Clarification, harvest efficiency, step yield, resin cycles.' },
+  qc: { name: 'Product activity & QC records', cost: 10, vars: ['SA'], cat: 'Material', desc: 'Specific activity per batch.' }
+};
+const FACTORS = { A: 'Inoculum age / seed train', F: 'Feed timing', D: 'Dissolved-oxygen control', S: 'Sensor / measurement reliability', R: 'Downstream recovery', X: 'Raw materials or other' };
+const STAGES = ['Inoculum preparation', 'Upstream fermentation', 'Harvest', 'Downstream recovery', 'Final quality assessment'];
+
+function fresh(sc = 'drift') { return { v: 1, sc, hyp: null, evidence: [], stage: 0, settings: { ...E.SCEN[sc].cur }, stageLog: [], runs: [], events: [], ui: { modal: null, tip: null, confirm: null } }; }
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1 && E.SCEN[s.sc]) return s; } catch (e) { } return null; }
+let S = load() || fresh();
+S.ui = { modal: null, tip: null, confirm: null };
+let saveT; function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }, 200); }
+
+// ---------- helpers ----------
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (x, d = 2) => (x == null || !isFinite(x)) ? '—' : Number(x).toFixed(d);
+const pct = (x, d = 1) => (x == null || !isFinite(x)) ? '—' : (x >= 0 ? '+' : '−') + Math.abs(100 * x).toFixed(d) + '%';
+const SC = () => E.SCEN[S.sc];
+const C = E.C;
+const hasEv = id => S.evidence.includes(id);
+const monLeft = () => MON_BUDGET - S.evidence.reduce((s, id) => s + EV[id].cost, 0);
+const p1Settings = p => ({ ...p, train: false, qc: false });
+const cost = p => E.ivCost(p1Settings(p), SC().cur);
+const activeIV = p => E.activeIV(p1Settings(p), SC().cur);
+function sim(p) { return E.simulate(S.sc, p1Settings(p)); }
+function val(k, v) { const c = CTRL[k]; return c.type === 'select' ? c.opts[v] : fmt(v, c.d) + ' ' + c.unit; }
+function isChanged(k, p = S.settings) { const v = p[k], cur = SC().cur[k]; return typeof v === 'number' ? Math.abs(v - cur) > 1e-6 : v !== cur; }
+function logEv(type, text) { S.events.push({ t: Date.now(), type, text }); }
+let toastT; function toast(m) { let o = $('#toast'); if (!o) { o = document.createElement('div'); o.id = 'toast'; o.className = 'toast'; o.setAttribute('role', 'status'); document.body.appendChild(o); } o.textContent = m; o.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => o.hidden = true, 2400); }
+const tipBtn = (id, label) => `<button class="tipbtn" data-act="tip" data-k="${id}" aria-label="Explain ${esc(label)}" aria-expanded="${S.ui.tip === id}">?</button>`;
+function ticks(lo, hi, n = 4) {
+  const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0))), f = step0 / mag;
+  const step = (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag; const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+  return { t: out, d: Math.max(0, -Math.floor(Math.log10(step))) };
+}
+function lineChart(o) {
+  const W = 640, H = o.h || 200, ml = 50, mr = 14, mt = o.title ? 26 : 10, mb = 28;
+  const vals = o.series.flatMap(s => s.vals).concat((o.hl || []).map(h => h.y)).filter(v => v != null && isFinite(v));
+  if (!vals.length) return '<p class="muted small">No data.</p>';
+  let lo = o.yMin ?? Math.min(...vals), hi = o.yMax ?? Math.max(...vals);
+  if (hi - lo < 1e-9) { hi += 1; lo -= 1; } const pad = (hi - lo) * 0.1; if (o.yMin == null) lo -= pad; if (o.yMax == null) hi += pad;
+  const n = o.xs.length, X = i => ml + (n <= 1 ? 0.5 : i / (n - 1)) * (W - ml - mr), Y = v => mt + (1 - (v - lo) / (hi - lo)) * (H - mt - mb);
+  const tk = ticks(lo, hi, 4); let g = '';
+  if (o.title) g += `<text class="ttl" x="${ml}" y="16">${esc(o.title)}</text>`;
+  if (o.band) g += `<rect x="${X(o.band[0])}" y="${mt}" width="${Math.max(0, X(o.band[1]) - X(o.band[0]))}" height="${H - mt - mb}" fill="var(--glow)"/>`;
+  tk.t.forEach(t => { g += `<line class="gl" x1="${ml}" x2="${W - mr}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${t.toFixed(tk.d)}</text>`; });
+  const every = Math.ceil(n / 12);
+  o.xs.forEach((x, i) => { if (i % every === 0 || i === n - 1) g += `<text x="${X(i)}" y="${H - 10}" text-anchor="middle">${esc(x)}</text>`; });
+  (o.hl || []).forEach(h => { g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(h.y)}" y2="${Y(h.y)}" stroke="${h.color || 'var(--muted)'}" stroke-dasharray="${h.dash || '4 4'}" stroke-width="1.2"/><text x="${W - mr}" y="${Y(h.y) - 4}" text-anchor="end" style="fill:${h.color || 'var(--muted)'}">${esc(h.label || '')}</text>`; });
+  o.series.forEach(s => {
+    const pts = s.vals.map((v, i) => v == null ? null : [X(i), Y(v)]);
+    let d = '', pen = false; pts.forEach(p => { if (!p) { pen = false; return; } d += (pen ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); pen = true; });
+    if (s.area) { const fp = pts.filter(Boolean); if (fp.length) g += `<path d="${d}L${fp[fp.length - 1][0]} ${H - mb}L${fp[0][0]} ${H - mb}Z" fill="${s.color}" opacity=".10"/>`; }
+    g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''}/>`;
+    pts.forEach((p, i) => { if (!p) return; const pc = o.pointColor ? o.pointColor(i, s.vals[i], s) : null; const last = i === pts.length - 1;
+      g += `<circle cx="${p[0]}" cy="${p[1]}" r="${pc ? 4.5 : last ? 4 : 2.6}" fill="${pc || s.color}"><title>${esc(s.name)} · ${esc(o.xLabel || 'Batch')} ${esc(o.xs[i])}: ${fmt(s.vals[i], s.d ?? 3)} ${esc(s.unit || '')}</title></circle>`; });
+  });
+  g += `<line class="ax" x1="${ml}" x2="${W - mr}" y1="${H - mb}" y2="${H - mb}"/>`;
+  if (o.yLab) g += `<text x="12" y="${mt + (H - mt - mb) / 2}" transform="rotate(-90 12 ${mt + (H - mt - mb) / 2})" text-anchor="middle">${esc(o.yLab)}</text>`;
+  const leg = o.series.length > 1 || o.legend ? `<div class="legend">${o.series.map(s => `<span style="--lc:${s.color}">${esc(s.name)}</span>`).join('')}${(o.hl || []).filter(h => h.leg).map(h => `<span style="--lc:${h.color}">${esc(h.leg)}</span>`).join('')}</div>` : '';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title || 'chart')}">${g}</svg>${leg}`;
+}
+function barChart(o) {
+  const W = o.w || 320, H = o.h || 190, ml = 46, mr = 8, mt = o.title ? 26 : 10, mb = 34;
+  const vals = o.groups.flatMap(g => g.vals).filter(isFinite); let hi = Math.max(0, ...vals) * 1.15 || 1, lo = Math.min(0, ...vals) * 1.15;
+  if (o.yMax != null) hi = o.yMax;
+  const Y = v => mt + (1 - (v - lo) / (hi - lo)) * (H - mt - mb), cw = (W - ml - mr) / o.cats.length, bw = Math.min(46, (cw - 14) / o.groups.length);
+  const tk = ticks(lo, hi, 4); let g = o.title ? `<text class="ttl" x="${ml}" y="16">${esc(o.title)}</text>` : '';
+  tk.t.forEach(t => { g += `<line class="gl" x1="${ml}" x2="${W - mr}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${t.toFixed(tk.d)}</text>`; });
+  o.cats.forEach((c, i) => {
+    const x0 = ml + i * cw + (cw - bw * o.groups.length) / 2;
+    o.groups.forEach((gr, j) => { const v = gr.vals[i]; if (!isFinite(v)) return; const y = Y(Math.max(v, 0)), h = Math.abs(Y(v) - Y(0));
+      g += `<rect x="${x0 + j * bw + 1}" y="${y}" width="${bw - 2}" height="${Math.max(1, h)}" fill="${gr.colors ? gr.colors[i] : gr.color}" rx="1"><title>${esc(gr.name)} · ${esc(c)}: ${o.fmt ? o.fmt(v) : fmt(v)}</title></rect>`;
+      if (o.labels !== false) g += `<text x="${x0 + j * bw + bw / 2}" y="${(v >= 0 ? y : y + h + 10) - 4}" text-anchor="middle" style="fill:var(--fg)">${o.fmt ? o.fmt(v) : fmt(v)}</text>`; });
+    g += `<text x="${ml + i * cw + cw / 2}" y="${H - 14}" text-anchor="middle">${esc(c)}</text>`;
+  });
+  (o.hl || []).forEach(h => { g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(h.y)}" y2="${Y(h.y)}" stroke="${h.color}" stroke-dasharray="4 4"/><text x="${W - mr}" y="${Y(h.y) - 4}" text-anchor="end" style="fill:${h.color}">${esc(h.label)}</text>`; });
+  g += `<line class="ax" x1="${ml}" x2="${W - mr}" y1="${Y(0)}" y2="${Y(0)}"/>`;
+  const leg = o.groups.length > 1 ? `<div class="legend">${o.groups.map(gr => `<span style="--lc:${gr.color}">${esc(gr.name)}</span>`).join('')}</div>` : '';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title || 'bar chart')}">${g}</svg>${leg}`;
+}
+
+
+// ---------- header + DMAIC strip ----------
+function viewTop() {
+  const left = monLeft(), c = cost(S.settings);
+  return `<div class="bar"><div class="brand"><b>BATCHSHIFT</b><span><i class="beacon">●</i> CASE 014 · PHASE 1</span></div>
+   <label class="sc-pick"><span class="label">Scenario</span><select id="scSel" data-ch="scenario">${Object.values(E.SCEN).map(s => `<option value="${s.id}" ${s.id === S.sc ? 'selected' : ''}>S${s.n} · ${esc(s.name)}</option>`).join('')}</select></label>
+   <div class="meters">
+    <div class="meter"><span class="label">Monitoring credits</span><span class="v" id="mMon" style="color:${left < 10 ? 'var(--alarm)' : ''}">${left} / ${MON_BUDGET}</span></div>
+    <div class="meter"><span class="label">Intervention spend</span><span class="v" id="mInt" style="color:${c > INT_BUDGET ? 'var(--bad)' : ''}">${c} / ${INT_BUDGET}</span></div>
+    <div class="meter"><span class="label">Batch</span><span class="v">025${S.runs.length ? ' · run ' + (S.runs.length + (S.stage < 5 && S.stage > 0 ? 1 : 0)) : ''}</span></div>
+    <button class="btn sm" data-act="reset">Reset session</button></div></div>`;
+}
+function viewDmaic() {
+  const st = [
+    ['Define', S.hyp ? 'done' : 'active', 'Problem, baseline and initial hypothesis'],
+    ['Measure', S.hyp ? (S.runs.length ? 'done' : 'active') : 'todo', 'Run batch 025, buy evidence, read results'],
+    ['Analyze', 'later', 'Phase 2: Pareto, SPC, fishbone, hypothesis tracker'],
+    ['Improve', 'later', 'Phase 2: replay and controlled comparisons'],
+    ['Control', 'later', 'Phase 2: control plan and CAPA']];
+  return `<ol class="dmaic" aria-label="DMAIC progress">${st.map(([n, s, d]) => `<li class="${s}"><b>${n}</b><span>${d}</span></li>`).join('')}</ol>`;
+}
+
+// ---------- Define: problem + hypothesis ----------
+function viewDefine() {
+  const sc = SC();
+  const problem = `<div class="panel define"><div class="stack"><span class="label">Define · Production alert, case 014 · NovaBio Enzymatics (fictional)</span>
+    <h1>Final yield is down 14%. Find out why.</h1>
+    <p class="lede">Final enzyme yield has fallen from <b>${fmt(C.Y0)} g/L</b> to <b>${fmt(C.Ycur)} g/L</b> over six months, and product activity has become inconsistent. Batch 025 is next. ${esc(sc.blurb)}</p></div>
+    <div class="calc" aria-label="Relative decline calculation"><span class="label">Relative decline</span>
+     <div class="eqline num">(${fmt(C.Ycur)} − ${fmt(C.Y0)}) / ${fmt(C.Y0)} = <b style="color:var(--bad)">${pct((C.Ycur - C.Y0) / C.Y0)}</b></div>
+     <span class="tiny muted">Baseline: mean of batches 001–006. Current: mean of 019–024. Workbook: Baseline!B5.</span></div></div>`;
+  if (S.hyp) {
+    return problem + `<div class="note info"><b>Initial hypothesis (locked):</b> ${esc(FACTORS[S.hyp.factor])} · confidence ${S.hyp.conf}%. ${esc(S.hyp.text)} <span class="muted small">Compare it with the evidence as you go.</span></div>`;
+  }
+  return problem + `<div class="panel stack hypform"><h2>Before you touch the plant: what do you think is causing the loss?</h2>
+    <p class="muted small">You have no evidence yet. Record your best guess and confidence so you can compare it with what the data shows. Root-cause reasoning starts here.</p>
+    <div class="grid3"><label class="field"><span class="label">Most likely factor</span><select id="h_factor">${Object.entries(FACTORS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label>
+     <label class="field"><span class="label">Confidence <b id="h_confv">40</b>%</span><input type="range" id="h_conf" min="0" max="100" step="5" value="40"></label>
+     <label class="field"><span class="label">Team name</span><input type="text" id="h_team" maxlength="40" value="Team Alpha"></label></div>
+    <label class="field"><span class="label">Reasoning</span><textarea id="h_text" maxlength="400" placeholder="One or two sentences"></textarea></label>
+    <div><button class="btn primary" data-act="hypStart">Lock hypothesis and open the control room</button></div></div>`;
+}
+
+// ---------- Control room ----------
+const ICON = [
+  '<svg viewBox="0 0 42 42" aria-hidden="true"><path d="M16 4h10M18 4v12L8 36h26L24 16V4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 30h18l-3-6H15z" fill="var(--accent)" opacity=".5"/></svg>',
+  '<svg viewBox="0 0 42 42" aria-hidden="true"><rect x="9" y="6" width="24" height="32" rx="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 2v14M15 16h12" stroke="currentColor" stroke-width="2"/><rect x="11" y="22" width="20" height="14" rx="6" fill="var(--accent)" opacity=".5"/></svg>',
+  '<svg viewBox="0 0 42 42" aria-hidden="true"><circle cx="21" cy="21" r="14" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="21" cy="21" r="5" fill="var(--accent)" opacity=".6"/><path d="M21 7v8M21 27v8M7 21h8M27 21h8" stroke="currentColor" stroke-width="2"/></svg>',
+  '<svg viewBox="0 0 42 42" aria-hidden="true"><rect x="15" y="4" width="12" height="34" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 14h12M15 22h12M15 30h12" stroke="var(--accent)" stroke-width="3"/></svg>',
+  '<svg viewBox="0 0 42 42" aria-hidden="true"><path d="M8 6h20l6 6v24H8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 22l5 5 9-10" fill="none" stroke="var(--good)" stroke-width="3"/></svg>'];
+function stageKV(i) {
+  const L = S.stageLog[i]; if (!L) return '';
+  const kv = (a, b) => `<span class="muted">${a}</span><span>${b}</span>`;
+  return `<div class="kv">${[
+    () => kv('Age', fmt(L.A, 1) + ' h') + kv('Seed fitness', fmt(L.inoc, 3)),
+    () => kv('Titer', fmt(L.T, 2) + ' g/L') + kv('DO probe', fmt(L.Dm, 0) + ' min') + kv('Lysis', fmt(L.L, 3)),
+    () => kv('Harvest eff.', fmt(L.H, 3)) + kv('Clarified', fmt(L.harvested, 2) + ' g/L'),
+    () => kv('Step yield', fmt(L.Reff, 3)) + kv('Recovered', fmt(L.Y, 2) + ' g/L'),
+    () => kv('Yield', fmt(L.Y, 2) + ' g/L') + kv('Activity', fmt(L.SA, 1) + ' U/mg')][i]()}</div>`;
+}
+function viewTimeline() {
+  const st = S.stage;
+  return `<div class="line" role="list" aria-label="Production timeline">${STAGES.map((s, i) => `<div role="listitem" class="stage ${i < st ? 'done' : i === st ? 'active' : 'todo'}" aria-current="${i === st ? 'step' : 'false'}">${i === st ? '<i class="flow"></i>' : ''}
+    <div class="row sb"><span class="label">Stage ${i + 1}</span>${i < st ? '<span class="chip good">done</span>' : i === st ? '<span class="chip acc">active</span>' : ''}</div>
+    ${ICON[i]}<span class="st-n">${s}</span>${stageKV(i)}${i < 4 ? '<i class="pipe"></i>' : ''}</div>`).join('')}</div>`;
+}
+function ctrlRow(k, locked) {
+  const c = CTRL[k], v = S.settings[k], cur = SC().cur[k], iv = E.IV[c.iv], ch = isChanged(k);
+  const input = c.type === 'select'
+    ? `<select id="c_${k}" data-ctrl="${k}" ${locked ? 'disabled' : ''}>${c.opts.map((o, i) => `<option value="${i}" ${i === v ? 'selected' : ''}>${o}</option>`).join('')}</select>`
+    : `<div class="slider"><input type="range" id="c_${k}" data-ctrl="${k}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" ${locked ? 'disabled' : ''} aria-label="${esc(c.label)}"><input type="number" id="n_${k}" data-num="${k}" min="${c.min}" max="${c.max}" step="${c.step}" value="${fmt(v, c.d)}" ${locked ? 'disabled' : ''} aria-label="${esc(c.label)} value"></div>`;
+  return `<div class="ctrl ${ch ? 'changed' : ''}" id="row_${k}">
+    <div class="nm">${tipBtn(k, c.label)}<span>${esc(c.label)}</span></div><div class="val num" id="val_${k}">${val(k, v)}</div>
+    ${S.ui.tip === k ? `<div class="full tip">${esc(c.tip)}${c.min != null ? ` Allowed range ${c.min}–${c.max} ${c.unit}.` : ''}</div>` : ''}
+    <div class="full">${input}</div>
+    <div class="full ivtag">Plant practice ${val(k, cur)} · ${k === 'M' ? 'Raising to High' : 'Changing it'} buys <b>${esc(iv.name)}</b> (${iv.cost} cr)${locked ? ' · <span class="chip">locked</span>' : ''}</div></div>`;
+}
+function estimate() {
+  const p = S.settings;
+  if (S.stage >= 2) { const L = S.stageLog[1], R = S.stage >= 4 ? S.stageLog[3].Reff : p.R; return { Y: L.T * L.H * R, basis: S.stage >= 4 ? 'measured titer, harvest and recovery' : 'measured titer and harvest; recovery at setpoint' }; }
+  return { Y: E.chain(p, 0).Y, basis: 'probe readings only; nothing measured offline yet' };
+}
+function statusHTML() {
+  const est = estimate(), r = sim(S.settings), c = cost(S.settings), act = activeIV(S.settings), done = S.stage >= 5;
+  const sa = done ? S.stageLog[4].SA : null;
+  return `<div class="s"><span>Estimated final yield</span><span class="big num" id="estY" style="color:${est.Y < C.Ycur + 0.1 ? 'var(--alarm)' : ''}">${fmt(est.Y, 2)}<small> g/L</small></span></div>
+   <div class="tiny muted">${esc(est.basis)}. A model estimate, not a measurement. Baseline ${fmt(C.Y0)}, current ${fmt(C.Ycur)}.</div>
+   <div class="s"><span>Product activity</span><span class="num">${sa != null ? fmt(sa, 1) + ' U/mg' : 'measured at QA'}</span></div>
+   <div class="s"><span>Process variability ${tipBtn('cv', 'process variability')}</span><span class="num" id="estCV">${fmt(r.cv, 1)}% CV</span></div>
+   ${S.ui.tip === 'cv' ? '<div class="tip">Coefficient of variation of yield across an 8-batch seeded projection at these settings. Measures batch-to-batch scatter, separate from the average.</div>' : ''}
+   <div class="s"><span>Monitoring credits left</span><span class="num">${monLeft()}</span></div>
+   <div class="s"><span>Intervention cost</span><span class="num" id="estCost" style="color:${c > INT_BUDGET ? 'var(--bad)' : ''}">${c} / ${INT_BUDGET} cr</span></div>
+   <div class="tiny">${act.length ? act.map(k => `<span class="chip">${esc(E.IV[k].name)}</span>`).join(' ') : '<span class="muted">No interventions: running current plant practice.</span>'}</div>
+   ${c > INT_BUDGET ? '<div class="note">Over the intervention budget. Undo a change before completing the stage.</div>' : ''}`;
+}
+function evidenceShop() {
+  return Object.entries(EV).map(([id, e]) => `<div class="ev ${hasEv(id) ? 'own' : ''}"><div><div class="t">${esc(e.name)}</div><div class="tiny muted">${esc(e.desc)}</div></div>
+   ${hasEv(id) ? `<button class="btn sm" data-act="evOpen" data-id="${id}">View</button>` : `<button class="btn sm" data-act="evBuy" data-id="${id}" ${e.cost > monLeft() ? 'disabled title="Not enough credits"' : ''}>${e.cost} cr</button>`}</div>`).join('');
+}
+function viewControl() {
+  if (!S.hyp) return '';
+  const st = S.stage, done = st >= 5;
+  let active;
+  if (!done) {
+    const ks = KEYS.filter(k => CTRL[k].stage === st);
+    const note = st === 2 ? '<div class="note info">Harvest has no direct control. Its efficiency follows from the lysis produced in fermentation (H = 0.95 − 1.2·(L − 0.0352)). This is where upstream problems surface later.</div>'
+      : st === 4 ? '<div class="note info">Quality assessment measures final yield and specific activity. Release the batch to see the results dashboard.</div>' : '';
+    active = `<div class="panel stack"><div class="row sb"><h2>Stage ${st + 1}: ${STAGES[st]}</h2>${st === 0 ? '<button class="btn sm" data-act="plant">Reset to plant practice</button>' : ''}</div>
+      ${note}${ks.map(k => ctrlRow(k, false)).join('')}
+      <div class="row"><button class="btn primary" data-act="advance" id="advBtn">${st === 4 ? 'Release batch and open results' : 'Complete stage and transfer'}</button>
+      <span class="tiny muted">Completed stages lock. Later controls cannot change earlier results.</span></div></div>`;
+  } else {
+    active = `<div class="panel stack"><h2>Batch released</h2><p>Results are below. Start another batch from the same seed to test a different setting, one change at a time.</p>
+     <div class="row"><button class="btn primary" data-act="newBatch">Start another batch (same seed)</button><a class="btn" href="#results">Jump to results</a></div></div>`;
+  }
+  const locked = st > 0 ? `<details class="panel flat"><summary>Settings locked in completed stages</summary>${KEYS.filter(k => CTRL[k].stage < st).map(k => ctrlRow(k, true)).join('')}</details>` : '';
+  return `<section class="cr" aria-label="Control room"><div class="stack">${viewTimeline()}${active}${locked}</div>
+   <aside class="stack"><div class="panel status"><h3 class="h4">Live status</h3><div id="status">${statusHTML()}</div></div>
+    <div class="panel"><div class="row sb"><h3 class="h4">Monitoring: buy evidence</h3><span class="chip">${monLeft()} cr left</span></div>
+     <p class="tiny muted">All seven cards cost ${Object.values(EV).reduce((s, e) => s + e.cost, 0)} cr. You have ${MON_BUDGET}. Choose what you most need to see.</p>${evidenceShop()}</div></aside></section>`;
+}
+
+// ---------- Evidence panel ----------
+function evidencePanel(id) {
+  const e = EV[id], sc = SC(), rows = E.history(S.sc).rows, xs = rows.map(r => String(r.batch).padStart(3, '0'));
+  const charts = e.vars.map((v, i) => {
+    const hv = E.HIST_VARS[v];
+    const hl = v === 'calDays' ? [{ y: 30, label: '30-day policy', color: 'var(--alarm)' }] : v === 'SA' ? [{ y: C.SAtarget, label: 'target 95 (assumption)', color: 'var(--alarm)' }] : v === 'Y' ? [{ y: C.Y0, label: 'baseline 5.00', color: 'var(--muted)' }, { y: C.Ycur, label: 'current 4.30', color: 'var(--bad)' }] : [];
+    return lineChart({ title: `${hv.label} (${hv.unit})`, xs, series: [{ name: hv.label, vals: rows.map(r => r[v]), color: ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)'][i % 4], unit: hv.unit, d: hv.d, area: true }], hl, band: [0, 5], h: 170 });
+  }).join('');
+  const stats = e.vars.map(v => { const hv = E.HIST_VARS[v], b = rows.slice(0, 6).map(r => r[v]), c = rows.slice(18).map(r => r[v]);
+    return `<tr><td>${hv.label}</td><td class="n">${fmt(E.mean(b), hv.d + 1)}</td><td class="n">${fmt(E.mean(c), hv.d + 1)}</td><td class="n">${fmt(E.sd(c), hv.d + 2)}</td></tr>`; }).join('');
+  return `<div class="row sb"><span class="label">Evidence ${id.toUpperCase()} · ${e.cat} · synthetic records</span><button class="btn sm" data-act="close">Close</button></div>
+   <h2>${esc(e.name)}</h2><p class="obs">${esc(sc.notes[id])}</p>${charts}
+   <div class="scroll"><table><thead><tr><th>Variable</th><th class="n">Baseline mean</th><th class="n">Current mean</th><th class="n">Current SD</th></tr></thead><tbody>${stats}</tbody></table></div>
+   ${id === 'do' ? '<div class="note">These are the probe’s own readings. A reading is only as good as the instrument behind it.</div>' : ''}
+   <p class="tiny muted">Shaded band: baseline batches 001–006. Hover points for values. Same data as the workbook’s S${sc.n}_History sheet.</p>`;
+}
+
+// ---------- Results dashboard ----------
+function viewResults() {
+  if (!S.runs.length) return '';
+  const run = S.runs[S.runs.length - 1], r = sim(run.settings), b = r.batch, nom = r.nominal, base = E.chain(E.BASE, SC().kappa);
+  const seeD = hasEv('cal');
+  const tile = (lab, v, unit, sub, color) => `<div class="tile"><span class="label">${lab}</span><div class="tv num" style="color:${color || 'inherit'}">${v}<small> ${unit}</small></div><div class="tiny muted">${sub}</div></div>`;
+  const rows = [['Baseline (batches 001–006)', C.Y0], ['Current (batches 019–024)', C.Ycur], ['This run: nominal model', nom.Y], ['This run: batch 025', b.Y], ['This run: 8-batch mean', r.Ym]];
+  const projX = r.proj.map((_, i) => 'P' + (i + 1));
+  const chainRows = [
+    ['Seed fitness f_inoc', 'Model!8', base.inoc, nom.inoc, b.inoc, 4],
+    ['DO excursion, probe (min)', 'Model!4', base.Dm, nom.Dm, b.Dm, 1],
+    ['True low-DO time (min)', 'Model!10', base.Dt, seeD ? nom.Dt : null, seeD ? b.Dt : null, 1],
+    ['Titer T (g/L)', 'Model!11', base.T, nom.T, b.T, 3],
+    ['Lysis L', 'Model!12', base.L, nom.L, b.L, 4],
+    ['Harvest efficiency H', 'Model!13', base.H, nom.H, b.H, 4],
+    ['Recovery step yield R', 'Model!6', base.Reff, nom.Reff, b.Reff, 4],
+    ['Final yield Y (g/L)', 'Model!14', base.Y, nom.Y, b.Y, 3],
+    ['Specific activity SA (U/mg)', 'Model!16', base.SA, nom.SA, b.SA, 2]];
+  const chg = KEYS.filter(k => isChanged(k, run.settings));
+  return `<section id="results" class="stack" aria-label="Results dashboard"><div class="row sb"><div><span class="label">Measure · results dashboard · run ${S.runs.length}</span><h2>Batch 025 results</h2></div>
+    <span class="small muted">Settings vs plant practice: ${chg.length ? chg.map(k => `${CTRL[k].label} ${val(k, run.settings[k])}`).join('; ') : 'no changes'}</span></div>
+   <div class="tiles">
+    ${tile('Final yield, batch 025', fmt(b.Y, 2), 'g/L', `${pct((b.Y - C.Y0) / C.Y0)} vs baseline · ${pct((b.Y - C.Ycur) / C.Ycur)} vs current`, b.Y < C.Ycur + 0.1 ? 'var(--bad)' : b.Y >= TARGET ? 'var(--good)' : 'var(--alarm)')}
+    ${tile('Specific activity', fmt(b.SA, 1), 'U/mg', `Educational target ${C.SAtarget} U/mg · ${b.SA >= C.SAtarget ? 'met' : 'not met'} · 8-batch mean ${fmt(r.SAm, 1)}`, b.SA >= C.SAtarget ? 'var(--good)' : 'var(--alarm)')}
+    ${tile('Process variability', fmt(r.cv, 2), '% CV', `Yield SD ${fmt(r.Ysd, 3)} g/L over 8 projected batches · activity CV ${fmt(r.SAcv, 2)}%`)}
+    ${tile('8-batch projected mean', fmt(r.Ym, 3), 'g/L', `Target ${fmt(TARGET)} g/L (assumption) · ${r.Ym >= TARGET ? 'met' : 'not met'} · ${r.belowSA} of 8 below activity target`)}
+   </div>
+   <div class="grid2"><div class="panel stack"><h3>Comparison with baseline</h3>
+     <div class="scroll"><table><thead><tr><th>Yield</th><th class="n">g/L</th><th class="n">Abs. vs baseline</th><th class="n">Rel. vs baseline</th><th class="n">Rel. vs current</th></tr></thead><tbody>
+     ${rows.map(([n, y]) => `<tr><td>${n}</td><td class="n">${fmt(y, 3)}</td><td class="n">${fmt(y - C.Y0, 3)}</td><td class="n">${pct((y - C.Y0) / C.Y0)}</td><td class="n">${pct((y - C.Ycur) / C.Ycur)}</td></tr>`).join('')}</tbody></table></div>
+     <p class="tiny muted">Nominal = the workbook Model sheet with these settings (no random disturbance). Batch 025 = one seeded draw. 8-batch mean = projection used for variability.</p></div>
+    <div class="panel">${barChart({ title: 'Final yield (g/L) · dashed line: target ' + fmt(TARGET), cats: ['Baseline', 'Current', 'Nominal', 'Batch 025', '8-batch'], groups: [{ name: 'Yield', vals: rows.map(x => x[1]), colors: ['var(--muted)', 'var(--bad)', 'var(--violet)', 'var(--accent)', 'var(--accent)'] }], hl: [{ y: TARGET, label: '', color: 'var(--alarm)' }], w: 520, h: 240, fmt: v => fmt(v, 2), yMax: 5.6 })}</div></div>
+   <div class="grid2"><div class="panel">${lineChart({ title: 'Projected yield by batch (g/L)', xs: projX, xLabel: 'Projected batch', series: [{ name: 'Yield', vals: r.proj.map(x => x.Y), color: 'var(--accent)', d: 3, unit: 'g/L' }], hl: [{ y: C.Y0, label: 'baseline 5.00', color: 'var(--muted)' }, { y: C.Ycur, label: 'current 4.30', color: 'var(--bad)' }], h: 200 })}</div>
+    <div class="panel">${lineChart({ title: 'Projected specific activity by batch (U/mg)', xs: projX, xLabel: 'Projected batch', series: [{ name: 'Activity', vals: r.proj.map(x => x.SA), color: 'var(--violet)', d: 1, unit: 'U/mg' }], hl: [{ y: C.SAtarget, label: 'target 95', color: 'var(--alarm)' }, { y: 100, label: 'baseline 100', color: 'var(--muted)' }], h: 200 })}</div></div>
+   <div class="panel stack"><h3>Where the product went: stage-by-stage chain</h3>
+    <div class="scroll"><table><thead><tr><th>Quantity</th><th>Workbook cell</th><th class="n">Baseline</th><th class="n">This run, nominal</th><th class="n">Batch 025</th></tr></thead><tbody>
+    ${chainRows.map(([n, ref, a, x, y, d]) => `<tr><td>${n}</td><td class="mono tiny">${ref}</td><td class="n">${fmt(a, d)}</td><td class="n">${x == null ? '<span class="muted">needs calibration evidence</span>' : fmt(x, d)}</td><td class="n">${y == null ? '—' : fmt(y, d)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="tiny muted">Y = T · H · R. Activity is computed separately from quantity. Batch 025 includes the seeded disturbance (DO ${fmt(b.dist.d, 1)} min, feed ${fmt(b.dist.f, 1)} min, recovery ${fmt(b.dist.r, 4)}, yield noise ${fmt(100 * b.dist.e, 2)}%).</p></div>
+   <div class="grid2"><div class="panel stack"><h3>Evidence behind your next decision</h3>
+     <p class="small"><b>Initial hypothesis:</b> ${esc(FACTORS[S.hyp.factor])} (${S.hyp.conf}%).</p>
+     <p class="small"><b>Evidence bought:</b> ${S.evidence.length ? S.evidence.map(id => `<button class="linkbtn" data-act="evOpen" data-id="${id}">${esc(EV[id].name)}</button>`).join(', ') : 'none yet'} (${MON_BUDGET - monLeft()} of ${MON_BUDGET} cr).</p>
+     <p class="small muted">Does the evidence support your hypothesis, contradict it, or leave it open? Phase 2 adds the Analyze tools (Pareto, SPC, fishbone, hypothesis revisions) to test this formally.</p></div>
+    <div class="panel stack"><h3>Run log</h3><div class="scroll"><table><thead><tr><th>Run</th><th>Changes vs plant practice</th><th class="n">Batch 025</th><th class="n">8-batch mean</th><th class="n">Activity</th><th class="n">CV%</th><th class="n">Cost</th></tr></thead><tbody>
+     ${S.runs.map((x, i) => { const q = sim(x.settings), c = KEYS.filter(k => isChanged(k, x.settings)); return `<tr><td>${i + 1}</td><td class="small">${c.map(k => `${CTRL[k].label.split(' ')[0]} ${val(k, x.settings[k])}`).join('; ') || '—'}</td><td class="n">${fmt(q.batch.Y, 3)}</td><td class="n">${fmt(q.Ym, 3)}</td><td class="n">${fmt(q.SAm, 1)}</td><td class="n">${fmt(q.cv, 2)}</td><td class="n">${q.cost}</td></tr>`; }).join('')}</tbody></table></div>
+     <p class="tiny muted">Every run uses the same seed and disturbance draws, so differences come from your settings. Change one factor at a time to attribute an effect.</p></div></div></section>`;
+}
+
+function viewModelNotes() {
+  const sc = SC();
+  return `<details class="panel flat" id="assume"><summary>Model and assumptions (from the workbook)</summary><div class="stack small">
+   <div class="eq">f_inoc = max(0.5, 1 − ${C.kA}·(A − ${C.Aopt})²)
+D_true = D_probe + max(0, ${C.Sref} − S)·κ
+T = T0 · f_inoc · (1 − ${C.kF}·F) · exp(−${C.kD}·D_true),  T0 = ${fmt(E.T0, 4)} g/L
+L = ${C.L0} + ${C.lD}·D_true + ${C.lF}·F,  L_base = ${fmt(E.Lb, 4)}
+H = clamp(${C.H0} − ${C.hL}·(L − L_base), 0.5, 0.99)
+Y = T · H · R
+SA = min(105, 100 · (1 − ${C.saD}·(D_true − 8)) · (1 − ${C.saA}·max(0, A − ${C.Aact})) · (1 − ${C.saPool}·max(0, R − ${C.Rpool})))</div>
+   <p>These are the workbook’s Assumptions and Model sheets. The site’s engine reproduces the Model sheet to within 1e-14 on 20 test settings. All coefficients are educational assumptions, not validated values. All plant records are synthetic.</p>
+   <p><b>Added by the site (not in the workbook):</b> monitoring credits (${MON_BUDGET}) and evidence costs; random disturbances for batch 025 and the 8-batch projection (DO N(0, 6·m) min, feed N(0, 3·m) min, recovery N(0, 0.008), yield N(0, 1.2%), activity N(0, 1.5%)), with m = 1.4 / 1.0 / 0.65 by monitoring level; the probe-based yield estimate shown before fermentation finishes.</p>
+   <p>Scenario S${sc.n} plant practice: ${KEYS.map(k => `${CTRL[k].label} ${val(k, sc.cur[k])}`).join('; ')}. Projection seed ${sc.seed + 7919}.</p></div></details>`;
+}
+
+// ---------- render ----------
+let rendering = false, queued = false;
+function render() {
+  if (rendering) { if (!queued) { queued = true; queueMicrotask(() => { queued = false; render(); }); } return; }
+  rendering = true;
+  try {
+    $('#top').innerHTML = viewTop();
+    $('#main').innerHTML = viewDmaic() + viewDefine() + viewControl() + viewResults() + (S.hyp ? viewModelNotes() : '');
+    let ov = '';
+    if (S.ui.modal) ov = `<div class="scrim" data-act="close"></div><div class="drawer" role="dialog" aria-modal="true" aria-label="${esc(EV[S.ui.modal].name)}">${evidencePanel(S.ui.modal)}</div>`;
+    if (S.ui.confirm) ov += `<div class="scrim"></div><div class="confirm" role="alertdialog" aria-label="${esc(S.ui.confirm.title)}"><h3>${esc(S.ui.confirm.title)}</h3><p class="small">${esc(S.ui.confirm.text)}</p><div class="row"><button class="btn warn" data-act="confirmYes">${esc(S.ui.confirm.yes)}</button><button class="btn" data-act="confirmNo">Cancel</button></div></div>`;
+    $('#overlay').innerHTML = ov;
+  } catch (err) { console.error(err); $('#main').innerHTML = `<div class="note">Something went wrong drawing this page: ${esc(err.message)}. Use Reset session to start again.</div>`; }
+  finally { rendering = false; }
+  save();
+}
+let pending = null;
+function ask(title, text, yes, fn) { S.ui.confirm = { title, text, yes }; pending = fn; render(); }
+
+function advance() {
+  if (cost(S.settings) > INT_BUDGET) { toast('Over the intervention budget. Undo a change first.'); return; }
+  const r = sim(S.settings), b = r.batch, st = S.stage;
+  S.stageLog[st] = { inoc: b.inoc, Dm: b.Dm, Dt: b.Dt, T: b.T, L: b.L, H: b.H, harvested: b.harvested, Reff: b.Reff, Y: b.Y, SA: b.SA, A: S.settings.A };
+  logEv('stage', `${STAGES[st]} complete`);
+  S.stage++;
+  if (S.stage === 5) { S.runs.push({ settings: { ...S.settings }, created: Date.now(), evidence: [...S.evidence] }); logEv('run', `Run ${S.runs.length} released: ${fmt(b.Y, 3)} g/L`); }
+  render();
+  if (S.stage === 5) requestAnimationFrame(() => { const el = $('#results'); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); });
+}
+function setCtrl(k, raw, fromNumber) {
+  const c = CTRL[k]; let v = +raw;
+  if (c.type !== 'select') {
+    if (!isFinite(v)) { toast(`${c.label}: enter a number between ${c.min} and ${c.max}.`); return false; }
+    if (v < c.min || v > c.max) { toast(`${c.label} must be ${c.min}–${c.max} ${c.unit}. Set to the nearest limit.`); v = E.clamp(v, c.min, c.max); }
+    v = Math.round(v / c.step) * c.step; v = +v.toFixed(4);
+  }
+  S.settings[k] = v;
+  const vEl = $('#val_' + k); if (vEl) vEl.textContent = val(k, v);
+  const row = $('#row_' + k); if (row) row.classList.toggle('changed', isChanged(k));
+  if (c.type !== 'select') { const sl = $('#c_' + k), nb = $('#n_' + k); if (sl && fromNumber) sl.value = v; if (nb && !fromNumber) nb.value = fmt(v, c.d); if (nb && fromNumber) nb.value = fmt(v, c.d); }
+  const st = $('#status'); if (st) st.innerHTML = statusHTML();
+  const mi = $('#mInt'); if (mi) { const cc = cost(S.settings); mi.textContent = cc + ' / ' + INT_BUDGET; mi.style.color = cc > INT_BUDGET ? 'var(--bad)' : ''; }
+  save(); return true;
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const a = t.dataset.act, d = t.dataset;
+  switch (a) {
+    case 'hypStart': S.hyp = { factor: $('#h_factor').value, conf: +$('#h_conf').value, text: $('#h_text').value.trim(), team: $('#h_team').value.trim() || 'Team Alpha', t: Date.now() }; logEv('hypothesis', `Initial: ${FACTORS[S.hyp.factor]} (${S.hyp.conf}%)`); break;
+    case 'advance': if (S.hyp && S.stage < 5) { advance(); return; } break;
+    case 'evBuy': { const id = d.id; if (hasEv(id)) break; if (EV[id].cost > monLeft()) { toast('Not enough monitoring credits for that card.'); return; } S.evidence.push(id); logEv('evidence', `Bought ${EV[id].name}`); S.ui.modal = id; break; }
+    case 'evOpen': S.ui.modal = d.id; break;
+    case 'close': S.ui.modal = null; break;
+    case 'tip': S.ui.tip = S.ui.tip === d.k ? null : d.k; break;
+    case 'plant': S.settings = { ...SC().cur }; break;
+    case 'newBatch': S.stage = 0; S.stageLog = []; logEv('run', 'New batch started from the same seed'); window.scrollTo(0, 0); break;
+    case 'reset': ask('Reset the session?', 'This clears your hypothesis, evidence, runs and settings on this device.', 'Reset', () => { S = fresh(S.sc); }); return;
+    case 'confirmYes': { const fn = pending; pending = null; S.ui.confirm = null; if (fn) fn(); break; }
+    case 'confirmNo': pending = null; S.ui.confirm = null; break;
+    default: return;
+  }
+  render();
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'h_conf') { $('#h_confv').textContent = t.value; return; }
+  if (t.dataset.ctrl && t.type === 'range') setCtrl(t.dataset.ctrl, t.value, false);
+});
+document.addEventListener('change', e => {
+  const t = e.target, d = t.dataset;
+  if (d.ctrl) { if (t.tagName === 'SELECT') setCtrl(d.ctrl, t.value, false); logEv('setting', `${CTRL[d.ctrl].label} → ${val(d.ctrl, S.settings[d.ctrl])}`); save(); return; }
+  if (d.num) { if (setCtrl(d.num, t.value, true) === false) t.value = fmt(S.settings[d.num], CTRL[d.num].d); return; }
+  if (d.ch === 'scenario') {
+    const nv = t.value; if (nv === S.sc) return;
+    const go = () => { S = fresh(nv); };
+    if (S.hyp || S.evidence.length) { t.value = S.sc; ask('Switch scenario?', 'Switching starts a new session for the selected scenario. Your current hypothesis, evidence and runs will be cleared.', 'Switch scenario', go); }
+    else { go(); render(); }
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && (S.ui.modal || S.ui.confirm)) { S.ui.modal = null; S.ui.confirm = null; pending = null; render(); } });
+window.BS = { get state() { return S; }, E, sim };
+render();
+</script>
+
+</body>
+</html>
